@@ -128,7 +128,7 @@ export interface ShippingLogResponse {
   unexpectedCase: string | null;
   isCodCollected: boolean;
   isCodTransferred: boolean;
-  status: 'PENDING' | 'ASSIGNED' | 'PICKED_UP' | 'SHIPPING' | 'DELIVERED' | 'RETURNED' | 'CANCELLED';
+  status: 'PENDING' | 'ASSIGNED' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'FAILED' | 'RETURNED' | 'CANCELLED';
   totalAmount: string | null;
   codCollectDate: string | null;
   codTransferDate: string | null;
@@ -226,6 +226,25 @@ class OrderService {
   }
 
   /**
+   * Get shipping logs by order ID (may return multiple logs for same order)
+   */
+  async getShippingLogsByOrderId(orderId: string): Promise<ShippingLogResponse[]> {
+    try {
+      const response = await axios.get<APIResponse<ShippingLogResponse[]>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/order/${orderId}`,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching shipping logs by order ID:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Assign shipping log to current staff (self-assign)
    */
   async assignToMe(shippingLogId: string): Promise<ShippingLogResponse> {
@@ -250,7 +269,7 @@ class OrderService {
    */
   async updateShippingStatus(
     shippingLogId: string,
-    status: 'SHIPPING' | 'DELIVERED' | 'RETURNED' | 'CANCELLED',
+    status: 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'FAILED' | 'RETURNED',
     data?: {
       note?: string;
       unexpectedCase?: string;
@@ -259,20 +278,38 @@ class OrderService {
     }
   ): Promise<ShippingLogResponse> {
     try {
+      const requestBody = {
+        status,
+        ...data,
+      };
+      
+      console.log('🔄 Updating shipping status:');
+      console.log('  URL:', `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}`);
+      console.log('  Shipping Log ID:', shippingLogId);
+      console.log('  Request Body:', JSON.stringify(requestBody, null, 2));
+      console.log('  Headers:', this.getHeaders());
+      
       const response = await axios.patch<APIResponse<ShippingLogResponse>>(
-        `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}/status`,
-        {
-          status,
-          ...data,
-        },
+        `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}`,
+        requestBody,
         {
           headers: this.getHeaders(),
         }
       );
-
+      
+      console.log('✅ Update successful:', response.data);
       return response.data.data;
-    } catch (error) {
-      console.error('Error updating shipping status:', error);
+    } catch (error: any) {
+      console.error('❌ Error updating shipping status:');
+      console.error('  Status Code:', error.response?.status);
+      console.error('  Status Text:', error.response?.statusText);
+      console.error('  Error Message:', error.response?.data?.message || error.message);
+      console.error('  Full Response:', JSON.stringify(error.response?.data, null, 2));
+      console.error('  Request Config:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data,
+      });
       throw error;
     }
   }
@@ -281,7 +318,21 @@ class OrderService {
    * Start shipping (shipper picks up and starts delivery)
    */
   async startShipping(shippingLogId: string): Promise<ShippingLogResponse> {
-    return this.updateShippingStatus(shippingLogId, 'SHIPPING');
+    return this.updateShippingStatus(shippingLogId, 'OUT_FOR_DELIVERY');
+  }
+
+  /**
+   * Mark as picked up (shipper collected the package)
+   */
+  async markAsPickedUp(shippingLogId: string): Promise<ShippingLogResponse> {
+    return this.updateShippingStatus(shippingLogId, 'PICKED_UP');
+  }
+
+  /**
+   * Mark as in transit
+   */
+  async markAsInTransit(shippingLogId: string): Promise<ShippingLogResponse> {
+    return this.updateShippingStatus(shippingLogId, 'IN_TRANSIT');
   }
 
   /**
@@ -311,13 +362,13 @@ class OrderService {
   }
 
   /**
-   * Cancel shipping
+   * Cancel shipping (mark as failed)
    */
   async cancelShipping(
     shippingLogId: string,
     reason: string
   ): Promise<ShippingLogResponse> {
-    return this.updateShippingStatus(shippingLogId, 'CANCELLED', {
+    return this.updateShippingStatus(shippingLogId, 'FAILED', {
       unexpectedCase: reason,
     });
   }

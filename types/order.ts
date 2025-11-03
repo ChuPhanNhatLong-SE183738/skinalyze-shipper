@@ -37,7 +37,7 @@ export interface Order {
   customer: Customer;
   pickupLocation: Location;
   deliveryLocation: Location;
-  status: 'pending' | 'accepted' | 'picking' | 'delivering' | 'completed' | 'cancelled' | 'returned';
+  status: 'pending' | 'accepted' | 'picking' | 'in_transit' | 'delivering' | 'completed' | 'failed' | 'returned';
   createdAt: string;
   acceptedAt?: string;
   completedAt?: string;
@@ -65,10 +65,12 @@ export const mapAPIStatusToAppStatus = (
     PENDING: 'pending',
     ASSIGNED: 'accepted',
     PICKED_UP: 'picking',
-    SHIPPING: 'delivering',
+    IN_TRANSIT: 'in_transit',
+    OUT_FOR_DELIVERY: 'delivering',
     DELIVERED: 'completed',
+    FAILED: 'failed',
     RETURNED: 'returned',
-    CANCELLED: 'cancelled',
+    CANCELLED: 'failed', // Map CANCELLED to failed
   };
   
   return statusMap[apiStatus] || 'pending';
@@ -84,10 +86,11 @@ export const mapAppStatusToAPIStatus = (
     pending: 'PENDING',
     accepted: 'ASSIGNED',
     picking: 'PICKED_UP',
-    delivering: 'SHIPPING',
+    in_transit: 'IN_TRANSIT',
+    delivering: 'OUT_FOR_DELIVERY',
     completed: 'DELIVERED',
+    failed: 'FAILED',
     returned: 'RETURNED',
-    cancelled: 'CANCELLED',
   };
   
   return statusMap[appStatus] || 'PENDING';

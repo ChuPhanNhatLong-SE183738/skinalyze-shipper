@@ -14,9 +14,10 @@ const statusColors = {
   pending: '#FFA726',
   accepted: '#42A5F5',
   picking: '#AB47BC',
+  in_transit: '#9C27B0',
   delivering: '#66BB6A',
   completed: '#78909C',
-  cancelled: '#EF5350',
+  failed: '#EF5350',
   returned: '#FF6F00',
 };
 
@@ -24,9 +25,10 @@ const statusLabels = {
   pending: 'Chờ nhận',
   accepted: 'Đã nhận',
   picking: 'Đang lấy hàng',
+  in_transit: 'Đang vận chuyển',
   delivering: 'Đang giao',
   completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
+  failed: 'Thất bại',
   returned: 'Đã trả lại',
 };
 
@@ -104,6 +106,11 @@ export default function OrderCard({ order, onPress, onAccept, onComplete }: Orde
           </View>
         </View>
       )}
+
+      {/* Tracking Button for picking/delivering status
+      {(order.status === 'picking' || order.status === 'delivering') && (
+        <TrackingButton order={order} />
+      )} */}
 
       {order.status === 'pending' && onAccept && (
         <TouchableOpacity

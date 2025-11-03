@@ -1,6 +1,7 @@
 import OrderCard from '@/components/order-card';
 import AuthService from '@/services/auth.service';
 import OrderService from '@/services/order.service';
+import TrackingService from '@/services/tracking.service';
 import { Order, convertAPIOrderToAppOrder } from '@/types/order';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -43,6 +44,15 @@ export default function HomeScreen() {
       const token = await AuthService.getAccessToken();
       if (token) {
         OrderService.setAccessToken(token);
+        // Initialize tracking service with access token
+        TrackingService.setAccessToken(token);
+        // Try to connect to WebSocket server (non-blocking)
+        console.log('🔌 Attempting to connect to tracking server...');
+        TrackingService.connect()
+          .then(() => console.log('✅ Tracking service connected successfully'))
+          .catch((error) => {
+            console.error('⚠️  Tracking service connection failed:', error.message);
+          });
       }
 
       await loadOrders();
@@ -74,7 +84,7 @@ export default function HomeScreen() {
 
   const filteredMyOrders = myOrders.filter((order) => {
     if (myOrderFilter === 'all') {
-      return order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'returned';
+      return order.status !== 'completed' && order.status !== 'failed' && order.status !== 'returned';
     }
     return order.status === myOrderFilter;
   });
@@ -86,7 +96,8 @@ export default function HomeScreen() {
   };
 
   const handleOrderPress = (order: Order) => {
-    Alert.alert('Chi tiết đơn hàng', `Đơn hàng #${order.orderNumber}`);
+    // Navigate to order detail screen
+    router.push(`/order-detail?id=${order.id}`);
   };
 
   const handleAcceptOrder = async (order: Order) => {

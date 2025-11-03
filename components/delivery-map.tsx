@@ -1,5 +1,6 @@
 import { GOONG_API_KEY, GOONG_MAP_KEY } from '@/config/env';
 import GoongService from '@/services/goong.service';
+import LocationTrackingAPI from '@/services/location-tracking.api';
 import LocationService from '@/services/location.service';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -10,6 +11,8 @@ import { WebView } from 'react-native-webview';
 interface DeliveryMapProps {
   pickupLocation: { latitude: number; longitude: number; address: string };
   deliveryLocation: { latitude: number; longitude: number; address: string };
+  orderStatus?: 'pending' | 'accepted' | 'picking' | 'in_transit' | 'delivering' | 'completed' | 'failed' | 'returned';
+  orderId?: string; // Add orderId for location tracking
   onNavigate?: () => void;
   showNavigation?: boolean;
 }
@@ -17,6 +20,8 @@ interface DeliveryMapProps {
 export default function DeliveryMap({
   pickupLocation,
   deliveryLocation,
+  orderStatus = 'pending',
+  orderId,
   onNavigate,
   showNavigation = true,
 }: DeliveryMapProps) {
@@ -36,14 +41,16 @@ export default function DeliveryMap({
 
   const initializeMap = async () => {
     try {
-      // Get current location
+      // Get current location first
       const location = await LocationService.getCurrentLocation();
       if (location) {
         setCurrentLocation(location);
+        // Reload directions with current location
+        setTimeout(() => loadDirections(), 500);
+      } else {
+        // Fallback to pickup location
+        await loadDirections();
       }
-
-      // Get directions from Goong API
-      await loadDirections();
     } catch (error) {
       console.error('Error initializing map:', error);
       Alert.alert('Lỗi', 'Không thể tải bản đồ. Vui lòng thử lại.');
@@ -54,13 +61,24 @@ export default function DeliveryMap({
 
   const loadDirections = async () => {
     try {
+      // Use current location if available, otherwise use pickup location
+      const currentLat = currentLocation?.coords.latitude || pickupLocation.latitude;
+      const currentLng = currentLocation?.coords.longitude || pickupLocation.longitude;
+      
       const origin = {
-        lat: pickupLocation.latitude,
-        lng: pickupLocation.longitude,
+        lat: currentLat,
+        lng: currentLng,
       };
+      
+      // Determine destination based on order status
+      // If picking (PICKED_UP), go to pickup location first
+      // If delivering (OUT_FOR_DELIVERY), go to delivery location
+      const isPickingUp = orderStatus === 'picking' || orderStatus === 'accepted';
+      const targetLocation = isPickingUp ? pickupLocation : deliveryLocation;
+      
       const destination = {
-        lat: deliveryLocation.latitude,
-        lng: deliveryLocation.longitude,
+        lat: targetLocation.latitude,
+        lng: targetLocation.longitude,
       };
 
       const directions = await GoongService.getDirections(origin, destination, 'bike');
@@ -114,15 +132,22 @@ export default function DeliveryMap({
 
   const sendLocationToBackend = async (lat: number, lng: number) => {
     try {
-      // TODO: Gọi API để gửi vị trí lên backend
-      // await axios.post('YOUR_BACKEND_API/shipper/location', {
-      //   latitude: lat,
-      //   longitude: lng,
-      //   timestamp: new Date().toISOString(),
-      // });
-      console.log('Sending location to backend:', lat, lng);
+      if (!orderId) {
+        console.warn('No orderId provided, skipping location update');
+        return;
+      }
+
+      await LocationTrackingAPI.sendLocation({
+        orderId,
+        lat,
+        lng,
+        timestamp: new Date().toISOString(),
+      });
+      
+      console.log('✅ Location sent to backend:', { orderId, lat, lng });
     } catch (error) {
-      console.error('Error sending location to backend:', error);
+      console.error('❌ Error sending location to backend:', error);
+      // Don't show alert to avoid interrupting user experience
     }
   };
 
@@ -153,6 +178,11 @@ export default function DeliveryMap({
     const currentLat = currentLocation?.coords.latitude || pickupLocation.latitude;
     const currentLng = currentLocation?.coords.longitude || pickupLocation.longitude;
     
+    // Determine target destination based on order status
+    const isPickingUp = orderStatus === 'picking' || orderStatus === 'accepted';
+    const targetLat = isPickingUp ? pickupLocation.latitude : deliveryLocation.latitude;
+    const targetLng = isPickingUp ? pickupLocation.longitude : deliveryLocation.longitude;
+    
     return `
 <!DOCTYPE html>
 <html>
@@ -165,7 +195,7 @@ export default function DeliveryMap({
     body { margin: 0; padding: 0; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
     .marker-pickup {
-      background-color: #42A5F5;
+      background-color: #66BB6A;
       width: 30px;
       height: 30px;
       border-radius: 50%;
@@ -173,7 +203,7 @@ export default function DeliveryMap({
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
     .marker-delivery {
-      background-color: #66BB6A;
+      background-color: #EF5350;
       width: 30px;
       height: 30px;
       border-radius: 50%;
@@ -182,11 +212,23 @@ export default function DeliveryMap({
     }
     .marker-current {
       background-color: #2196F3;
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       border: 3px solid white;
-      box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.3);
+      box-shadow: 0 0 0 5px rgba(33, 150, 243, 0.3);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+      }
     }
   </style>
 </head>
@@ -231,7 +273,9 @@ export default function DeliveryMap({
 
     // Load and display route
     map.on('load', function() {
-      fetch('https://rsapi.goong.io/Direction?origin=${pickupLocation.latitude},${pickupLocation.longitude}&destination=${deliveryLocation.latitude},${deliveryLocation.longitude}&vehicle=bike&api_key=${GOONG_API_KEY}')
+      // Use current location (shipper) as origin
+      // Target is pickup location if picking, delivery location if delivering
+      fetch('https://rsapi.goong.io/Direction?origin=${currentLat},${currentLng}&destination=${targetLat},${targetLng}&vehicle=bike&api_key=${GOONG_API_KEY}')
         .then(response => response.json())
         .then(data => {
           if (data.routes && data.routes.length > 0) {
@@ -259,7 +303,7 @@ export default function DeliveryMap({
                 'line-cap': 'round'
               },
               paint: {
-                'line-color': '#42A5F5',
+                'line-color': '${isPickingUp ? '#66BB6A' : '#42A5F5'}',
                 'line-width': 4
               }
             });
@@ -269,8 +313,8 @@ export default function DeliveryMap({
             // Fit bounds to show entire route
             var bounds = new goongjs.LngLatBounds();
             coordinates.forEach(coord => bounds.extend(coord));
-            bounds.extend([${pickupLocation.longitude}, ${pickupLocation.latitude}]);
-            bounds.extend([${deliveryLocation.longitude}, ${deliveryLocation.latitude}]);
+            bounds.extend([${currentLng}, ${currentLat}]);
+            bounds.extend([${targetLng}, ${targetLat}]);
             map.fitBounds(bounds, { padding: 50 });
           }
         })
