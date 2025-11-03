@@ -107,37 +107,8 @@ export default function OrderDetailScreen() {
   const handleCompleteOrder = async () => {
     if (!order) return;
 
-    Alert.alert(
-      'Hoàn thành đơn hàng',
-      'Bạn đã thu tiền COD chưa?',
-      [
-        {
-          text: 'Chưa thu',
-          onPress: async () => {
-            try {
-              await OrderService.completeDelivery(id, false, 0);
-              Alert.alert('Thành công', 'Đã hoàn thành đơn hàng');
-              loadOrderDetail();
-            } catch (error: any) {
-              Alert.alert('Lỗi', error.message || 'Không thể hoàn thành đơn hàng');
-            }
-          },
-        },
-        {
-          text: 'Đã thu tiền',
-          onPress: async () => {
-            try {
-              await OrderService.completeDelivery(id, true, order.totalAmount || 0);
-              Alert.alert('Thành công', 'Đã hoàn thành đơn hàng và thu COD');
-              loadOrderDetail();
-            } catch (error: any) {
-              Alert.alert('Lỗi', error.message || 'Không thể hoàn thành đơn hàng');
-            }
-          },
-        },
-        { text: 'Hủy', style: 'cancel' },
-      ]
-    );
+    // Navigate to upload pictures screen
+    router.push(`/upload-pictures?id=${id}` as any);
   };
 
   if (loading) {
@@ -167,6 +138,76 @@ export default function OrderDetailScreen() {
 
   const statusColor = statusColors[order.status];
   const statusLabel = statusLabels[order.status];
+
+  // Success screen for completed orders
+  if (order.status === 'completed') {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Chi tiết đơn hàng</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.completedContainer}>
+          {/* Success Icon */}
+          <View style={styles.successIconContainer}>
+            <View style={styles.successIconCircle}>
+              <Ionicons name="checkmark" size={80} color="#fff" />
+            </View>
+          </View>
+
+          {/* Success Message */}
+          <Text style={styles.successTitle}>Đã hoàn thành! 🎉</Text>
+          <Text style={styles.successSubtitle}>Đơn hàng đã được giao thành công</Text>
+
+          {/* Order Info Card */}
+          <View style={styles.completedCard}>
+            <View style={styles.completedCardRow}>
+              <Text style={styles.completedCardLabel}>Mã đơn hàng:</Text>
+              <Text style={styles.completedCardValue}>#{order.orderNumber}</Text>
+            </View>
+            
+            <View style={styles.completedCardRow}>
+              <Text style={styles.completedCardLabel}>Khách hàng:</Text>
+              <Text style={styles.completedCardValue}>{order.customer.name}</Text>
+            </View>
+
+            <View style={styles.completedCardRow}>
+              <Text style={styles.completedCardLabel}>Số điện thoại:</Text>
+              <Text style={styles.completedCardValue}>{order.customer.user.phone}</Text>
+            </View>
+
+            <View style={styles.completedCardRow}>
+              <Text style={styles.completedCardLabel}>Tổng tiền:</Text>
+              <Text style={[styles.completedCardValue, styles.completedAmount]}>
+                {order.totalAmount?.toLocaleString('vi-VN')}đ
+              </Text>
+            </View>
+
+            <View style={styles.completedCardRow}>
+              <Text style={styles.completedCardLabel}>Địa chỉ giao:</Text>
+              <Text style={[styles.completedCardValue, styles.completedAddress]}>
+                {order.deliveryLocation.address}
+              </Text>
+            </View>
+          </View>
+
+          {/* Actions */}
+          <TouchableOpacity
+            style={styles.backToHomeButton}
+            onPress={() => router.push('/')}
+          >
+            <Ionicons name="home" size={20} color="#fff" />
+            <Text style={styles.backToHomeButtonText}>Về trang chủ</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   // Fullscreen map layout for delivering status
   if ((order.status as any) === 'delivering' || (order.status as any) === 'in_transit') {
@@ -1060,5 +1101,112 @@ const styles = StyleSheet.create({
   detailValueSuccess: {
     color: '#4CAF50',
     fontWeight: '600',
+  },
+  // Completion screen styles
+  completedContainer: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  successIconContainer: {
+    marginTop: 40,
+    marginBottom: 24,
+  },
+  successIconCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  successTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  successSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 32,
+    textAlign: 'center',
+  },
+  completedCard: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 24,
+  },
+  completedCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  completedCardLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+    flex: 1,
+  },
+  completedCardValue: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
+    flex: 1.5,
+    textAlign: 'right',
+  },
+  completedAmount: {
+    fontSize: 16,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  completedAddress: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  backToHomeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    width: '100%',
+    shadowColor: '#4CAF50',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  backToHomeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

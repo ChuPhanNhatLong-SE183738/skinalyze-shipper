@@ -372,6 +372,40 @@ class OrderService {
       unexpectedCase: reason,
     });
   }
+
+  /**
+   * Upload finished pictures after completing delivery
+   * POST /api/v1/shipping-logs/:id/upload-finished-pictures
+   */
+  async uploadFinishedPictures(
+    shippingLogId: string,
+    pictures: { uri: string; name: string; type: string }[]
+  ): Promise<any> {
+    const formData = new FormData();
+    
+    // Add each picture to FormData
+    pictures.forEach((picture, index) => {
+      formData.append('pictures', {
+        uri: picture.uri,
+        name: picture.name || `photo_${index}.jpg`,
+        type: picture.type || 'image/jpeg',
+      } as any);
+    });
+
+    const response = await axios.post(
+      `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}/upload-finished-pictures`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    console.log('📸 Pictures uploaded:', response.data);
+    return response.data;
+  }
 }
 
 export default new OrderService();
