@@ -1,5 +1,5 @@
 import { useLocationTracking } from '@/hooks/use-location-tracking';
-import { ETAData } from '@/services/location-tracking.api';
+import { ETAData, VehicleType } from '@/services/location-tracking.api';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -9,6 +9,7 @@ interface ETADisplayProps {
   enabled?: boolean;
   compact?: boolean;
   isTracking?: boolean; // Whether location tracking is active
+  vehicle?: VehicleType; // Loại phương tiện
 }
 
 /**
@@ -21,6 +22,7 @@ export default function ETADisplay({
   enabled = true,
   compact = false,
   isTracking = true, // Default to true - will auto-track when enabled
+  vehicle = 'bike', // Mặc định là bike
 }: ETADisplayProps) {
   const [displayETA, setDisplayETA] = useState<ETAData | null>(null);
 
@@ -29,6 +31,7 @@ export default function ETADisplay({
     orderId,
     enabled: enabled, // Just use enabled directly
     intervalMs: 10000, // Update every 10 seconds
+    vehicle, // Truyền vehicle type
     onETAUpdate: (etaData) => {
       if (etaData) {
         setDisplayETA(etaData);

@@ -1,4 +1,4 @@
-import LocationTrackingAPI, { ETAData } from '@/services/location-tracking.api';
+import LocationTrackingAPI, { ETAData, VehicleType } from '@/services/location-tracking.api';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
 
@@ -6,6 +6,7 @@ interface UseLocationTrackingOptions {
   orderId: string;
   enabled?: boolean;
   intervalMs?: number;
+  vehicle?: VehicleType; // Loại phương tiện
   onETAUpdate?: (eta: ETAData | null) => void;
 }
 
@@ -26,6 +27,7 @@ export function useLocationTracking({
   orderId,
   enabled = false,
   intervalMs = 5000,
+  vehicle = 'bike', // Mặc định là bike
   onETAUpdate,
 }: UseLocationTrackingOptions): UseLocationTrackingReturn {
   const [isTracking, setIsTracking] = useState(false);
@@ -79,6 +81,7 @@ export function useLocationTracking({
       const response = await LocationTrackingAPI.sendLocation({
         orderId,
         ...location,
+        vehicle, // Gửi loại phương tiện
       });
 
       // Update ETA from response
@@ -107,6 +110,7 @@ export function useLocationTracking({
             const response = await LocationTrackingAPI.sendLocation({
               orderId,
               ...newLocation,
+              vehicle, // Gửi loại phương tiện
             });
 
             // Update ETA from response

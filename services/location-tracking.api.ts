@@ -3,11 +3,14 @@ import StorageService from './storage.service';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
+export type VehicleType = 'bike' | 'car';
+
 export interface LocationPayload {
   orderId: string;
   lat: number;
   lng: number;
   timestamp?: string;
+  vehicle?: VehicleType; // Loại phương tiện: bike (xe máy/xe đạp) hoặc car (ô tô)
 }
 
 export interface ETAData {
@@ -73,11 +76,13 @@ class LocationTrackingAPI {
         lat: payload.lat,
         lng: payload.lng,
         timestamp: payload.timestamp || new Date().toISOString(),
+        vehicle: payload.vehicle || 'bike', // Mặc định là bike
       };
 
       console.log('📤 ===== SENDING LOCATION TO BACKEND =====');
       console.log('🔗 URL:', `${API_BASE_URL}/api/v1/tracking/location`);
       console.log('📦 Request Body:', JSON.stringify(requestBody, null, 2));
+      console.log('🚗 Vehicle:', payload.vehicle || 'bike (default)');
       console.log('🔐 Token:', token ? `Bearer ${token.substring(0, 20)}...` : 'No token');
 
       const response = await axios.post(
