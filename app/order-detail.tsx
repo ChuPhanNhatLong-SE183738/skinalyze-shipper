@@ -1,45 +1,45 @@
-import DeliveryMap from '@/components/delivery-map';
-import ETADisplay from '@/components/eta-display';
-import VehicleSelector from '@/components/vehicle-selector';
-import { VehicleType } from '@/services/location-tracking.api';
-import OrderService from '@/services/order.service';
-import { Order, convertAPIOrderToAppOrder } from '@/types/order';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import DeliveryMap from "@/components/delivery-map";
+import ETADisplay from "@/components/eta-display";
+import VehicleSelector from "@/components/vehicle-selector";
+import { VehicleType } from "@/services/location-tracking.api";
+import OrderService from "@/services/order.service";
+import { Order, convertAPIOrderToAppOrder } from "@/types/order";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const statusColors = {
-  pending: '#FFA726',
-  accepted: '#42A5F5',
-  picking: '#AB47BC',
-  in_transit: '#9C27B0',
-  delivering: '#66BB6A',
-  completed: '#78909C',
-  failed: '#EF5350',
-  returned: '#FF6F00',
+  pending: "#FFA726",
+  accepted: "#42A5F5",
+  picking: "#AB47BC",
+  in_transit: "#9C27B0",
+  delivering: "#66BB6A",
+  completed: "#78909C",
+  failed: "#EF5350",
+  returned: "#FF6F00",
 };
 
 const statusLabels = {
-  pending: 'Chờ nhận',
-  accepted: 'Đã nhận',
-  picking: 'Đang lấy hàng',
-  in_transit: 'Đang vận chuyển',
-  delivering: 'Đang giao',
-  completed: 'Hoàn thành',
-  failed: 'Thất bại',
-  returned: 'Đã trả lại',
+  pending: "Chờ nhận",
+  accepted: "Đã nhận",
+  picking: "Đang lấy hàng",
+  in_transit: "Đang vận chuyển",
+  delivering: "Đang giao",
+  completed: "Hoàn thành",
+  failed: "Thất bại",
+  returned: "Đã trả lại",
 };
 
 export default function OrderDetailScreen() {
@@ -48,8 +48,8 @@ export default function OrderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [isCardExpanded, setIsCardExpanded] = useState(false);
   const [fullOrderDetails, setFullOrderDetails] = useState<any>(null);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>('bike');
-  
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>("bike");
+
   useEffect(() => {
     loadOrderDetail();
   }, [id]);
@@ -57,27 +57,29 @@ export default function OrderDetailScreen() {
   const loadOrderDetail = async () => {
     try {
       setLoading(true);
-      
+
       // Load shipping log detail
       const response = await OrderService.getShippingLogDetail(id);
       const orderData = convertAPIOrderToAppOrder(response);
       setOrder(orderData);
-      
+
       // Load full order details by orderId
       if (response.orderId) {
         try {
-          const fullDetails = await OrderService.getShippingLogsByOrderId(response.orderId);
-          console.log('📦 Full order details:', fullDetails);
+          const fullDetails = await OrderService.getShippingLogsByOrderId(
+            response.orderId
+          );
+          console.log("📦 Full order details:", fullDetails);
           if (fullDetails && fullDetails.length > 0) {
             setFullOrderDetails(fullDetails[0]);
           }
         } catch (error) {
-          console.warn('Could not load full order details:', error);
+          console.warn("Could not load full order details:", error);
         }
       }
     } catch (error) {
-      console.error('Error loading order detail:', error);
-      Alert.alert('Lỗi', 'Không thể tải chi tiết đơn hàng');
+      console.error("Error loading order detail:", error);
+      Alert.alert("Lỗi", "Không thể tải chi tiết đơn hàng");
       router.back();
     } finally {
       setLoading(false);
@@ -89,10 +91,10 @@ export default function OrderDetailScreen() {
 
     try {
       await OrderService.assignToMe(id);
-      Alert.alert('Thành công', 'Đã nhận đơn hàng');
+      Alert.alert("Thành công", "Đã nhận đơn hàng");
       loadOrderDetail(); // Reload to get updated status
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể nhận đơn hàng');
+      Alert.alert("Lỗi", error.message || "Không thể nhận đơn hàng");
     }
   };
 
@@ -101,10 +103,10 @@ export default function OrderDetailScreen() {
 
     try {
       await OrderService.startShipping(id);
-      Alert.alert('Thành công', 'Đã bắt đầu giao hàng');
+      Alert.alert("Thành công", "Đã bắt đầu giao hàng");
       loadOrderDetail();
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể bắt đầu giao hàng');
+      Alert.alert("Lỗi", error.message || "Không thể bắt đầu giao hàng");
     }
   };
 
@@ -132,7 +134,10 @@ export default function OrderDetailScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={64} color="#EF5350" />
           <Text style={styles.errorText}>Không tìm thấy đơn hàng</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.backButtonText}>Quay lại</Text>
           </TouchableOpacity>
         </View>
@@ -144,19 +149,25 @@ export default function OrderDetailScreen() {
   const statusLabel = statusLabels[order.status];
 
   // Success screen for completed orders
-  if (order.status === 'completed') {
+  if (order.status === "completed") {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chi tiết đơn hàng</Text>
           <View style={{ width: 24 }} />
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.completedContainer}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.completedContainer}
+        >
           {/* Success Icon */}
           <View style={styles.successIconContainer}>
             <View style={styles.successIconCircle}>
@@ -166,35 +177,45 @@ export default function OrderDetailScreen() {
 
           {/* Success Message */}
           <Text style={styles.successTitle}>Đã hoàn thành! 🎉</Text>
-          <Text style={styles.successSubtitle}>Đơn hàng đã được giao thành công</Text>
+          <Text style={styles.successSubtitle}>
+            Đơn hàng đã được giao thành công
+          </Text>
 
           {/* Order Info Card */}
           <View style={styles.completedCard}>
             <View style={styles.completedCardRow}>
               <Text style={styles.completedCardLabel}>Mã đơn hàng:</Text>
-              <Text style={styles.completedCardValue}>#{order.orderNumber}</Text>
+              <Text style={styles.completedCardValue}>
+                #{order.orderNumber}
+              </Text>
             </View>
-            
+
             <View style={styles.completedCardRow}>
               <Text style={styles.completedCardLabel}>Khách hàng:</Text>
-              <Text style={styles.completedCardValue}>{order.customer.name}</Text>
+              <Text style={styles.completedCardValue}>
+                {order.customer.name}
+              </Text>
             </View>
 
             <View style={styles.completedCardRow}>
               <Text style={styles.completedCardLabel}>Số điện thoại:</Text>
-              <Text style={styles.completedCardValue}>{order.customer.user.phone}</Text>
+              <Text style={styles.completedCardValue}>
+                {order.customer.user.phone}
+              </Text>
             </View>
 
             <View style={styles.completedCardRow}>
               <Text style={styles.completedCardLabel}>Tổng tiền:</Text>
               <Text style={[styles.completedCardValue, styles.completedAmount]}>
-                {order.totalAmount?.toLocaleString('vi-VN')}đ
+                {order.totalAmount?.toLocaleString("vi-VN")}đ
               </Text>
             </View>
 
             <View style={styles.completedCardRow}>
               <Text style={styles.completedCardLabel}>Địa chỉ giao:</Text>
-              <Text style={[styles.completedCardValue, styles.completedAddress]}>
+              <Text
+                style={[styles.completedCardValue, styles.completedAddress]}
+              >
                 {order.deliveryLocation.address}
               </Text>
             </View>
@@ -203,7 +224,7 @@ export default function OrderDetailScreen() {
           {/* Actions */}
           <TouchableOpacity
             style={styles.backToHomeButton}
-            onPress={() => router.push('/')}
+            onPress={() => router.push("/")}
           >
             <Ionicons name="home" size={20} color="#fff" />
             <Text style={styles.backToHomeButtonText}>Về trang chủ</Text>
@@ -214,9 +235,12 @@ export default function OrderDetailScreen() {
   }
 
   // Fullscreen map layout for delivering status
-  if ((order.status as any) === 'delivering' || (order.status as any) === 'in_transit') {
+  if (
+    (order.status as any) === "delivering" ||
+    (order.status as any) === "in_transit"
+  ) {
     return (
-      <SafeAreaView style={styles.containerFullscreen} edges={['top']}>
+      <SafeAreaView style={styles.containerFullscreen} edges={["top"]}>
         {/* Fullscreen Map */}
         <View style={styles.mapFullscreen}>
           <DeliveryMap
@@ -228,37 +252,45 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Floating Customer Info Card */}
-        <ScrollView 
-          style={[styles.floatingCard, isCardExpanded && styles.floatingCardExpanded]}
+        <ScrollView
+          style={[
+            styles.floatingCard,
+            isCardExpanded && styles.floatingCardExpanded,
+          ]}
           contentContainerStyle={styles.floatingCardContent}
           showsVerticalScrollIndicator={false}
         >
           {/* Header with Toggle */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.floatingCardHeader}
             onPress={() => setIsCardExpanded(!isCardExpanded)}
             activeOpacity={0.7}
           >
             <View style={styles.customerInfoCompact}>
               {order.customer.avatar ? (
-                <Image source={{ uri: order.customer.avatar }} style={styles.avatarSmall} />
+                <Image
+                  source={{ uri: order.customer.avatar }}
+                  style={styles.avatarSmall}
+                />
               ) : (
                 <View style={[styles.avatarSmall, styles.avatarPlaceholder]}>
                   <Ionicons name="person" size={20} color="#666" />
                 </View>
               )}
               <View style={styles.customerDetailsCompact}>
-                <Text style={styles.customerNameSmall}>{order.customer.name}</Text>
+                <Text style={styles.customerNameSmall}>
+                  {order.customer.name}
+                </Text>
                 <Text style={styles.customerPhoneSmall}>
-                  {order.customer.user.phone || 'Chưa có SĐT'}
+                  {order.customer.user.phone || "Chưa có SĐT"}
                 </Text>
               </View>
             </View>
             <View style={styles.headerActions}>
-              <Ionicons 
-                name={isCardExpanded ? "chevron-up" : "chevron-down"} 
-                size={24} 
-                color="#666" 
+              <Ionicons
+                name={isCardExpanded ? "chevron-up" : "chevron-down"}
+                size={24}
+                color="#666"
               />
             </View>
           </TouchableOpacity>
@@ -278,9 +310,13 @@ export default function OrderDetailScreen() {
             <>
               {/* Order Info */}
               <View style={styles.orderInfoCompact}>
-                <Text style={styles.orderNumberCompact}>#{order.orderNumber}</Text>
+                <Text style={styles.orderNumberCompact}>
+                  #{order.orderNumber}
+                </Text>
                 <Text style={styles.orderAmountCompact}>
-                  {order.totalAmount ? `${order.totalAmount.toLocaleString('vi-VN')}đ` : 'Chưa có'}
+                  {order.totalAmount
+                    ? `${order.totalAmount.toLocaleString("vi-VN")}đ`
+                    : "Chưa có"}
                 </Text>
               </View>
 
@@ -295,17 +331,24 @@ export default function OrderDetailScreen() {
               {/* Order Items */}
               {order.items && order.items.length > 0 && (
                 <View style={styles.itemsCompact}>
-                  <Text style={styles.itemsTitle}>Sản phẩm ({order.items.length})</Text>
+                  <Text style={styles.itemsTitle}>
+                    Sản phẩm ({order.items.length})
+                  </Text>
                   {order.items.map((item, index) => (
                     <View key={item.id || index} style={styles.itemRowCompact}>
                       {item.image && (
-                        <Image source={{ uri: item.image }} style={styles.itemImageSmall} />
+                        <Image
+                          source={{ uri: item.image }}
+                          style={styles.itemImageSmall}
+                        />
                       )}
                       <View style={styles.itemInfoCompact}>
                         <Text style={styles.itemNameCompact} numberOfLines={1}>
                           {item.name}
                         </Text>
-                        <Text style={styles.itemQuantityCompact}>x{item.quantity}</Text>
+                        <Text style={styles.itemQuantityCompact}>
+                          x{item.quantity}
+                        </Text>
                       </View>
                     </View>
                   ))}
@@ -316,12 +359,15 @@ export default function OrderDetailScreen() {
               {fullOrderDetails && (
                 <View style={styles.shippingLogDetails}>
                   <Text style={styles.itemsTitle}>Thông tin vận chuyển</Text>
-                  
+
                   {fullOrderDetails.shippingFee && (
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Phí ship:</Text>
                       <Text style={styles.detailValue}>
-                        {parseFloat(fullOrderDetails.shippingFee).toLocaleString('vi-VN')}đ
+                        {parseFloat(
+                          fullOrderDetails.shippingFee
+                        ).toLocaleString("vi-VN")}
+                        đ
                       </Text>
                     </View>
                   )}
@@ -329,7 +375,9 @@ export default function OrderDetailScreen() {
                   {fullOrderDetails.carrierName && (
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Đơn vị vận chuyển:</Text>
-                      <Text style={styles.detailValue}>{fullOrderDetails.carrierName}</Text>
+                      <Text style={styles.detailValue}>
+                        {fullOrderDetails.carrierName}
+                      </Text>
                     </View>
                   )}
 
@@ -337,15 +385,21 @@ export default function OrderDetailScreen() {
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Dự kiến giao:</Text>
                       <Text style={styles.detailValue}>
-                        {new Date(fullOrderDetails.estimatedDeliveryDate).toLocaleDateString('vi-VN')}
+                        {new Date(
+                          fullOrderDetails.estimatedDeliveryDate
+                        ).toLocaleDateString("vi-VN")}
                       </Text>
                     </View>
                   )}
 
                   {fullOrderDetails.note && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Ghi chú vận chuyển:</Text>
-                      <Text style={styles.detailValue}>{fullOrderDetails.note}</Text>
+                      <Text style={styles.detailLabel}>
+                        Ghi chú vận chuyển:
+                      </Text>
+                      <Text style={styles.detailValue}>
+                        {fullOrderDetails.note}
+                      </Text>
                     </View>
                   )}
 
@@ -354,15 +408,24 @@ export default function OrderDetailScreen() {
                       <Text style={styles.detailLabel}>Shipper:</Text>
                       <Text style={styles.detailValue}>
                         {fullOrderDetails.shippingStaff.fullName}
-                        {fullOrderDetails.shippingStaff.phone && ` - ${fullOrderDetails.shippingStaff.phone}`}
+                        {fullOrderDetails.shippingStaff.phone &&
+                          ` - ${fullOrderDetails.shippingStaff.phone}`}
                       </Text>
                     </View>
                   )}
 
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>COD:</Text>
-                    <Text style={[styles.detailValue, fullOrderDetails.isCodCollected && styles.detailValueSuccess]}>
-                      {fullOrderDetails.isCodCollected ? '✓ Đã thu' : '✗ Chưa thu'}
+                    <Text
+                      style={[
+                        styles.detailValue,
+                        fullOrderDetails.isCodCollected &&
+                          styles.detailValueSuccess,
+                      ]}
+                    >
+                      {fullOrderDetails.isCodCollected
+                        ? "✓ Đã thu"
+                        : "✗ Chưa thu"}
                     </Text>
                   </View>
                 </View>
@@ -389,8 +452,8 @@ export default function OrderDetailScreen() {
         </View>
 
         <View style={styles.etaContainerBottom}>
-          <ETADisplay 
-            orderId={order.orderId} 
+          <ETADisplay
+            orderId={order.orderId}
             enabled={true}
             compact={true}
             vehicle={selectedVehicle}
@@ -424,7 +487,7 @@ export default function OrderDetailScreen() {
 
   // Normal layout for other statuses
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
@@ -446,7 +509,9 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* ETA Display for active deliveries */}
-        {((order.status as any) === 'picking' || (order.status as any) === 'delivering' || (order.status as any) === 'in_transit') && (
+        {((order.status as any) === "picking" ||
+          (order.status as any) === "delivering" ||
+          (order.status as any) === "in_transit") && (
           <>
             {/* Vehicle Selector */}
             <View style={styles.section}>
@@ -456,10 +521,10 @@ export default function OrderDetailScreen() {
                 disabled={false}
               />
             </View>
-            
+
             <View style={styles.section}>
-              <ETADisplay 
-                orderId={order.orderId} 
+              <ETADisplay
+                orderId={order.orderId}
                 enabled={true}
                 compact={false}
                 vehicle={selectedVehicle}
@@ -473,12 +538,16 @@ export default function OrderDetailScreen() {
           <View style={styles.orderHeader}>
             <View style={styles.orderHeaderLeft}>
               <Text style={styles.orderNumber}>#{order.orderNumber}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+              <View
+                style={[styles.statusBadge, { backgroundColor: statusColor }]}
+              >
                 <Text style={styles.statusText}>{statusLabel}</Text>
               </View>
             </View>
             <Text style={styles.amount}>
-              {order.totalAmount ? `${order.totalAmount.toLocaleString('vi-VN')}đ` : 'Chưa có'}
+              {order.totalAmount
+                ? `${order.totalAmount.toLocaleString("vi-VN")}đ`
+                : "Chưa có"}
             </Text>
           </View>
         </View>
@@ -495,7 +564,10 @@ export default function OrderDetailScreen() {
           <Text style={styles.sectionTitle}>Thông tin khách hàng</Text>
           <View style={styles.customerCard}>
             {order.customer.avatar ? (
-              <Image source={{ uri: order.customer.avatar }} style={styles.avatar} />
+              <Image
+                source={{ uri: order.customer.avatar }}
+                style={styles.avatar}
+              />
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <Ionicons name="person" size={32} color="#666" />
@@ -506,13 +578,15 @@ export default function OrderDetailScreen() {
               <View style={styles.contactRow}>
                 <Ionicons name="call" size={16} color="#42A5F5" />
                 <Text style={styles.customerPhone}>
-                  {order.customer.user.phone || 'Chưa có SĐT'}
+                  {order.customer.user.phone || "Chưa có SĐT"}
                 </Text>
               </View>
               {order.customer.email && (
                 <View style={styles.contactRow}>
                   <Ionicons name="mail" size={16} color="#42A5F5" />
-                  <Text style={styles.customerEmail}>{order.customer.email}</Text>
+                  <Text style={styles.customerEmail}>
+                    {order.customer.email}
+                  </Text>
                 </View>
               )}
             </View>
@@ -522,14 +596,16 @@ export default function OrderDetailScreen() {
         {/* Locations */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Địa điểm</Text>
-          
+
           <View style={styles.locationCard}>
             <View style={styles.locationIcon}>
               <Ionicons name="location" size={24} color="#42A5F5" />
             </View>
             <View style={styles.locationInfo}>
               <Text style={styles.locationLabel}>Lấy hàng</Text>
-              <Text style={styles.locationAddress}>{order.pickupLocation.address}</Text>
+              <Text style={styles.locationAddress}>
+                {order.pickupLocation.address}
+              </Text>
             </View>
           </View>
 
@@ -541,7 +617,9 @@ export default function OrderDetailScreen() {
             </View>
             <View style={styles.locationInfo}>
               <Text style={styles.locationLabel}>Giao hàng</Text>
-              <Text style={styles.locationAddress}>{order.deliveryLocation.address}</Text>
+              <Text style={styles.locationAddress}>
+                {order.deliveryLocation.address}
+              </Text>
             </View>
           </View>
         </View>
@@ -549,11 +627,16 @@ export default function OrderDetailScreen() {
         {/* Order Items */}
         {order.items && order.items.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Sản phẩm ({order.items.length})</Text>
+            <Text style={styles.sectionTitle}>
+              Sản phẩm ({order.items.length})
+            </Text>
             {order.items.map((item, index) => (
               <View key={item.id || index} style={styles.itemCard}>
                 {item.image && (
-                  <Image source={{ uri: item.image }} style={styles.itemImage} />
+                  <Image
+                    source={{ uri: item.image }}
+                    style={styles.itemImage}
+                  />
                 )}
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.name}</Text>
@@ -565,7 +648,7 @@ export default function OrderDetailScreen() {
                   <View style={styles.itemFooter}>
                     <Text style={styles.itemQuantity}>x{item.quantity}</Text>
                     <Text style={styles.itemPrice}>
-                      {item.price?.toLocaleString('vi-VN')}đ
+                      {item.price?.toLocaleString("vi-VN")}đ
                     </Text>
                   </View>
                 </View>
@@ -580,11 +663,15 @@ export default function OrderDetailScreen() {
             <View style={styles.distanceInfo}>
               <View style={styles.distanceItem}>
                 <Ionicons name="navigate" size={20} color="#666" />
-                <Text style={styles.distanceText}>{order.distance.toFixed(1)} km</Text>
+                <Text style={styles.distanceText}>
+                  {order.distance.toFixed(1)} km
+                </Text>
               </View>
               <View style={styles.distanceItem}>
                 <Ionicons name="time" size={20} color="#666" />
-                <Text style={styles.distanceText}>{order.estimatedTime} phút</Text>
+                <Text style={styles.distanceText}>
+                  {order.estimatedTime} phút
+                </Text>
               </View>
             </View>
           </View>
@@ -593,20 +680,42 @@ export default function OrderDetailScreen() {
 
       {/* Action Buttons */}
       <View style={styles.footer}>
-        {order.status === 'pending' && (
-          <TouchableOpacity style={[styles.actionButton, styles.acceptButton]} onPress={handleAcceptOrder}>
-            <Text style={styles.actionButtonText}>Nhận đơn</Text>
-          </TouchableOpacity>
+        {order.status === "pending" && (
+          <>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.batchButton]}
+                onPress={() =>
+                  router.push(`/create-batch?customerId=${order.customer.id}`)
+                }
+              >
+                <Ionicons name="layers" size={20} color="#FF9800" />
+                <Text style={styles.batchButtonText}>Tạo đơn gộp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.acceptButton]}
+                onPress={handleAcceptOrder}
+              >
+                <Text style={styles.actionButtonText}>Nhận đơn</Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
 
-        {order.status === 'picking' && (
-          <TouchableOpacity style={[styles.actionButton, styles.startButton]} onPress={handleStartShipping}>
+        {order.status === "picking" && (
+          <TouchableOpacity
+            style={[styles.actionButton, styles.startButton]}
+            onPress={handleStartShipping}
+          >
             <Text style={styles.actionButtonText}>Bắt đầu giao hàng</Text>
           </TouchableOpacity>
         )}
 
-        {(order.status as any) === 'delivering' && (
-          <TouchableOpacity style={[styles.actionButton, styles.completeButton]} onPress={handleCompleteOrder}>
+        {(order.status as any) === "delivering" && (
+          <TouchableOpacity
+            style={[styles.actionButton, styles.completeButton]}
+            onPress={handleCompleteOrder}
+          >
             <Text style={styles.actionButtonText}>Hoàn thành</Text>
           </TouchableOpacity>
         )}
@@ -618,80 +727,80 @@ export default function OrderDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   errorText: {
     fontSize: 18,
-    color: '#666',
+    color: "#666",
     marginTop: 16,
     marginBottom: 24,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   backIcon: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   scrollView: {
     flex: 1,
   },
   mapContainer: {
     height: 250,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 16,
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 12,
   },
   orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   orderHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   orderNumber: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -699,18 +808,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   statusText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   amount: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#66BB6A',
+    fontWeight: "700",
+    color: "#66BB6A",
   },
   customerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   avatar: {
     width: 60,
@@ -718,9 +827,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
   avatarPlaceholder: {
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
   },
   customerInfo: {
     marginLeft: 16,
@@ -728,31 +837,31 @@ const styles = StyleSheet.create({
   },
   customerName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 6,
   },
   contactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginTop: 4,
   },
   customerPhone: {
     fontSize: 15,
-    color: '#666',
+    color: "#666",
   },
   customerEmail: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   locationCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   locationIcon: {
     width: 40,
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 2,
   },
   locationInfo: {
@@ -761,25 +870,25 @@ const styles = StyleSheet.create({
   },
   locationLabel: {
     fontSize: 13,
-    color: '#999',
+    color: "#999",
     marginBottom: 4,
   },
   locationAddress: {
     fontSize: 15,
-    color: '#333',
+    color: "#333",
     lineHeight: 22,
   },
   locationDivider: {
     width: 2,
     height: 20,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
     marginLeft: 19,
     marginVertical: 8,
   },
   itemCard: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 12,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -787,7 +896,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 8,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
   },
   itemInfo: {
     flex: 1,
@@ -795,117 +904,135 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 4,
   },
   itemDescription: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
     marginBottom: 6,
   },
   itemFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   itemQuantity: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   itemPrice: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#42A5F5',
+    fontWeight: "600",
+    color: "#42A5F5",
   },
   distanceInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 24,
   },
   distanceItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   distanceText: {
     fontSize: 15,
-    color: '#666',
+    color: "#666",
   },
   footer: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: "#e0e0e0",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 12,
   },
   actionButton: {
     paddingVertical: 14,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
+    flex: 1,
+  },
+  batchButton: {
+    backgroundColor: "#FFF3E0",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#FF9800",
+  },
+  batchButtonText: {
+    color: "#FF9800",
+    fontSize: 16,
+    fontWeight: "600",
   },
   acceptButton: {
-    backgroundColor: '#42A5F5',
+    backgroundColor: "#42A5F5",
   },
   startButton: {
-    backgroundColor: '#AB47BC',
+    backgroundColor: "#AB47BC",
   },
   completeButton: {
-    backgroundColor: '#66BB6A',
+    backgroundColor: "#66BB6A",
   },
   backButton: {
-    backgroundColor: '#42A5F5',
+    backgroundColor: "#42A5F5",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   backButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   actionButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   // Fullscreen delivery mode styles
   containerFullscreen: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   mapFullscreen: {
     flex: 1,
   },
   floatingCard: {
-    position: 'absolute',
+    position: "absolute",
     top: 60,
     left: 16,
     right: 16,
     maxHeight: 200,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   floatingCardExpanded: {
-    maxHeight: '70%',
+    maxHeight: "70%",
   },
   floatingCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   headerActions: {
     padding: 4,
   },
   customerInfoCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   avatarSmall: {
@@ -919,34 +1046,34 @@ const styles = StyleSheet.create({
   },
   customerNameSmall: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   customerPhoneSmall: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginTop: 2,
   },
   backIconFloating: {
     padding: 4,
   },
   addressCompact: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: "#f0f0f0",
   },
   addressTextCompact: {
     flex: 1,
     fontSize: 14,
-    color: '#333',
+    color: "#333",
     marginLeft: 8,
     lineHeight: 20,
   },
   etaContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 16,
     left: 16,
     right: 16,
@@ -954,7 +1081,7 @@ const styles = StyleSheet.create({
   },
   etaContainerBottom: {
     backgroundColor: "#ffffff",
-    position: 'absolute',
+    position: "absolute",
     top: 280, // Tăng thêm để có chỗ cho vehicle selector
     left: 16,
     right: 16,
@@ -962,7 +1089,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   vehicleSelectorContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 220, // Ngay trên ETA
     left: 16,
     right: 16,
@@ -970,21 +1097,21 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   floatingActions: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 32,
     left: 16,
     right: 16,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   actionButtonFloating: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -993,153 +1120,153 @@ const styles = StyleSheet.create({
   callButton: {
     flex: 0,
     width: 60,
-    backgroundColor: '#42A5F5',
+    backgroundColor: "#42A5F5",
   },
   completeButtonFloating: {
-    backgroundColor: '#66BB6A',
+    backgroundColor: "#66BB6A",
     gap: 8,
   },
   actionButtonTextFloating: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   floatingCardContent: {
     paddingBottom: 8,
   },
   orderInfoCompact: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   orderNumberCompact: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
   },
   orderAmountCompact: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#66BB6A',
+    fontWeight: "700",
+    color: "#66BB6A",
   },
   itemsCompact: {
     paddingTop: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   itemsTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
   },
   itemRowCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 6,
   },
   itemImageSmall: {
     width: 40,
     height: 40,
     borderRadius: 6,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
   },
   itemInfoCompact: {
     flex: 1,
     marginLeft: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   itemNameCompact: {
     flex: 1,
     fontSize: 14,
-    color: '#333',
+    color: "#333",
   },
   itemQuantityCompact: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
     marginLeft: 8,
   },
   itemsMore: {
     fontSize: 13,
-    color: '#666',
-    fontStyle: 'italic',
+    color: "#666",
+    fontStyle: "italic",
     marginTop: 4,
   },
   trackingCompact: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   notesCompact: {
     paddingTop: 12,
   },
   notesLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: "600",
+    color: "#666",
     marginBottom: 4,
   },
   notesText: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
     lineHeight: 20,
   },
   closeCardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginTop: 12,
     borderRadius: 8,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: "#FFEBEE",
   },
   closeCardText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#EF5350',
+    fontWeight: "600",
+    color: "#EF5350",
   },
   shippingLogDetails: {
     paddingTop: 16,
     paddingBottom: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: "#f0f0f0",
     marginTop: 12,
   },
   detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     paddingVertical: 6,
     gap: 12,
   },
   detailLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: "600",
+    color: "#666",
     flex: 1,
   },
   detailValue: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
     flex: 1.5,
-    textAlign: 'right',
+    textAlign: "right",
   },
   detailValueSuccess: {
-    color: '#4CAF50',
-    fontWeight: '600',
+    color: "#4CAF50",
+    fontWeight: "600",
   },
   // Completion screen styles
   completedContainer: {
     padding: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   successIconContainer: {
     marginTop: 40,
@@ -1149,10 +1276,10 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#4CAF50",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -1163,23 +1290,23 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   successSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
     marginBottom: 32,
-    textAlign: 'center',
+    textAlign: "center",
   },
   completedCard: {
-    width: '100%',
-    backgroundColor: '#fff',
+    width: "100%",
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -1190,46 +1317,46 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   completedCardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   completedCardLabel: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
     flex: 1,
   },
   completedCardValue: {
     fontSize: 14,
-    color: '#333',
-    fontWeight: '600',
+    color: "#333",
+    fontWeight: "600",
     flex: 1.5,
-    textAlign: 'right',
+    textAlign: "right",
   },
   completedAmount: {
     fontSize: 16,
-    color: '#4CAF50',
-    fontWeight: 'bold',
+    color: "#4CAF50",
+    fontWeight: "bold",
   },
   completedAddress: {
     fontSize: 13,
     lineHeight: 18,
   },
   backToHomeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
-    width: '100%',
-    shadowColor: '#4CAF50',
+    width: "100%",
+    shadowColor: "#4CAF50",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -1239,8 +1366,8 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   backToHomeButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

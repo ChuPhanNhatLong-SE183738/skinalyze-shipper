@@ -1,5 +1,5 @@
-import { BACKEND_URL } from '@/config/env';
-import axios from 'axios';
+import { BACKEND_URL } from "@/config/env";
+import axios from "axios";
 
 // Product type
 export interface Product {
@@ -31,7 +31,7 @@ export interface OrderItem {
 // Transaction type
 export interface Transaction {
   transactionId: string;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
+  status: "PENDING" | "COMPLETED" | "CANCELLED" | "FAILED";
   totalAmount: string;
   paymentMethod: string;
   createdAt: string;
@@ -71,7 +71,13 @@ export interface SimpleOrder {
   customer: Customer;
   customerId: string;
   transactionId: string;
-  status: 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'REJECTED' | 'CANCELLED';
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "SHIPPING"
+    | "DELIVERED"
+    | "REJECTED"
+    | "CANCELLED";
   shippingAddress: string;
   notes: string | null;
   rejectionReason: string | null;
@@ -107,7 +113,13 @@ export interface FullOrder {
   customerId: string;
   transaction: Transaction;
   transactionId: string;
-  status: 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'REJECTED' | 'CANCELLED';
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "SHIPPING"
+    | "DELIVERED"
+    | "REJECTED"
+    | "CANCELLED";
   shippingAddress: string;
   notes: string | null;
   rejectionReason: string | null;
@@ -128,7 +140,16 @@ export interface ShippingLogResponse {
   unexpectedCase: string | null;
   isCodCollected: boolean;
   isCodTransferred: boolean;
-  status: 'PENDING' | 'ASSIGNED' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'FAILED' | 'RETURNED' | 'CANCELLED';
+  status:
+    | "PENDING"
+    | "ASSIGNED"
+    | "PICKED_UP"
+    | "IN_TRANSIT"
+    | "OUT_FOR_DELIVERY"
+    | "DELIVERED"
+    | "FAILED"
+    | "RETURNED"
+    | "CANCELLED";
   totalAmount: string | null;
   codCollectDate: string | null;
   codTransferDate: string | null;
@@ -149,7 +170,7 @@ export interface APIResponse<T> {
 }
 
 class OrderService {
-  private accessToken: string = '';
+  private accessToken: string = "";
 
   /**
    * Set access token for authentication
@@ -163,8 +184,8 @@ class OrderService {
    */
   private getHeaders() {
     return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.accessToken}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.accessToken}`,
     };
   }
 
@@ -182,7 +203,7 @@ class OrderService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching available orders:', error);
+      console.error("Error fetching available orders:", error);
       throw error;
     }
   }
@@ -201,7 +222,7 @@ class OrderService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching my deliveries:', error);
+      console.error("Error fetching my deliveries:", error);
       throw error;
     }
   }
@@ -209,7 +230,9 @@ class OrderService {
   /**
    * Get shipping log detail by ID
    */
-  async getShippingLogDetail(shippingLogId: string): Promise<ShippingLogResponse> {
+  async getShippingLogDetail(
+    shippingLogId: string
+  ): Promise<ShippingLogResponse> {
     try {
       const response = await axios.get<APIResponse<ShippingLogResponse>>(
         `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}`,
@@ -220,7 +243,7 @@ class OrderService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching shipping log detail:', error);
+      console.error("Error fetching shipping log detail:", error);
       throw error;
     }
   }
@@ -228,7 +251,9 @@ class OrderService {
   /**
    * Get shipping logs by order ID (may return multiple logs for same order)
    */
-  async getShippingLogsByOrderId(orderId: string): Promise<ShippingLogResponse[]> {
+  async getShippingLogsByOrderId(
+    orderId: string
+  ): Promise<ShippingLogResponse[]> {
     try {
       const response = await axios.get<APIResponse<ShippingLogResponse[]>>(
         `${BACKEND_URL}/api/v1/shipping-logs/order/${orderId}`,
@@ -239,7 +264,7 @@ class OrderService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching shipping logs by order ID:', error);
+      console.error("Error fetching shipping logs by order ID:", error);
       throw error;
     }
   }
@@ -259,7 +284,7 @@ class OrderService {
 
       return response.data.data;
     } catch (error) {
-      console.error('Error assigning order to me:', error);
+      console.error("Error assigning order to me:", error);
       throw error;
     }
   }
@@ -269,7 +294,13 @@ class OrderService {
    */
   async updateShippingStatus(
     shippingLogId: string,
-    status: 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'FAILED' | 'RETURNED',
+    status:
+      | "PICKED_UP"
+      | "IN_TRANSIT"
+      | "OUT_FOR_DELIVERY"
+      | "DELIVERED"
+      | "FAILED"
+      | "RETURNED",
     data?: {
       note?: string;
       unexpectedCase?: string;
@@ -282,13 +313,16 @@ class OrderService {
         status,
         ...data,
       };
-      
-      console.log('🔄 Updating shipping status:');
-      console.log('  URL:', `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}`);
-      console.log('  Shipping Log ID:', shippingLogId);
-      console.log('  Request Body:', JSON.stringify(requestBody, null, 2));
-      console.log('  Headers:', this.getHeaders());
-      
+
+      console.log("🔄 Updating shipping status:");
+      console.log(
+        "  URL:",
+        `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}`
+      );
+      console.log("  Shipping Log ID:", shippingLogId);
+      console.log("  Request Body:", JSON.stringify(requestBody, null, 2));
+      console.log("  Headers:", this.getHeaders());
+
       const response = await axios.patch<APIResponse<ShippingLogResponse>>(
         `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}`,
         requestBody,
@@ -296,16 +330,22 @@ class OrderService {
           headers: this.getHeaders(),
         }
       );
-      
-      console.log('✅ Update successful:', response.data);
+
+      console.log("✅ Update successful:", response.data);
       return response.data.data;
     } catch (error: any) {
-      console.error('❌ Error updating shipping status:');
-      console.error('  Status Code:', error.response?.status);
-      console.error('  Status Text:', error.response?.statusText);
-      console.error('  Error Message:', error.response?.data?.message || error.message);
-      console.error('  Full Response:', JSON.stringify(error.response?.data, null, 2));
-      console.error('  Request Config:', {
+      console.error("❌ Error updating shipping status:");
+      console.error("  Status Code:", error.response?.status);
+      console.error("  Status Text:", error.response?.statusText);
+      console.error(
+        "  Error Message:",
+        error.response?.data?.message || error.message
+      );
+      console.error(
+        "  Full Response:",
+        JSON.stringify(error.response?.data, null, 2)
+      );
+      console.error("  Request Config:", {
         url: error.config?.url,
         method: error.config?.method,
         data: error.config?.data,
@@ -318,21 +358,21 @@ class OrderService {
    * Start shipping (shipper picks up and starts delivery)
    */
   async startShipping(shippingLogId: string): Promise<ShippingLogResponse> {
-    return this.updateShippingStatus(shippingLogId, 'OUT_FOR_DELIVERY');
+    return this.updateShippingStatus(shippingLogId, "OUT_FOR_DELIVERY");
   }
 
   /**
    * Mark as picked up (shipper collected the package)
    */
   async markAsPickedUp(shippingLogId: string): Promise<ShippingLogResponse> {
-    return this.updateShippingStatus(shippingLogId, 'PICKED_UP');
+    return this.updateShippingStatus(shippingLogId, "PICKED_UP");
   }
 
   /**
    * Mark as in transit
    */
   async markAsInTransit(shippingLogId: string): Promise<ShippingLogResponse> {
-    return this.updateShippingStatus(shippingLogId, 'IN_TRANSIT');
+    return this.updateShippingStatus(shippingLogId, "IN_TRANSIT");
   }
 
   /**
@@ -343,7 +383,7 @@ class OrderService {
     isCodCollected: boolean,
     totalAmount?: number
   ): Promise<ShippingLogResponse> {
-    return this.updateShippingStatus(shippingLogId, 'DELIVERED', {
+    return this.updateShippingStatus(shippingLogId, "DELIVERED", {
       isCodCollected,
       totalAmount,
     });
@@ -356,7 +396,7 @@ class OrderService {
     shippingLogId: string,
     reason: string
   ): Promise<ShippingLogResponse> {
-    return this.updateShippingStatus(shippingLogId, 'RETURNED', {
+    return this.updateShippingStatus(shippingLogId, "RETURNED", {
       unexpectedCase: reason,
     });
   }
@@ -368,9 +408,108 @@ class OrderService {
     shippingLogId: string,
     reason: string
   ): Promise<ShippingLogResponse> {
-    return this.updateShippingStatus(shippingLogId, 'FAILED', {
+    return this.updateShippingStatus(shippingLogId, "FAILED", {
       unexpectedCase: reason,
     });
+  }
+
+  /**
+   * Get batch delivery suggestions for a customer
+   * Returns orders from same customer that can be batched together
+   */
+  async getBatchSuggestions(
+    customerId: string
+  ): Promise<ShippingLogResponse[]> {
+    try {
+      const response = await axios.get<APIResponse<ShippingLogResponse[]>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/batch-suggestions/${customerId}`,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching batch suggestions:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create batch delivery from multiple orders
+   */
+  async createBatchDelivery(
+    orderIds: string[],
+    shippingStaffId: string,
+    note?: string
+  ): Promise<ShippingLogResponse[]> {
+    try {
+      const response = await axios.post<APIResponse<ShippingLogResponse[]>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/batch-delivery`,
+        {
+          orderIds,
+          shippingStaffId,
+          note,
+        },
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("📦 Batch created:", response.data);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error creating batch:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all orders in a batch
+   */
+  async getBatchOrders(batchCode: string): Promise<ShippingLogResponse[]> {
+    try {
+      const response = await axios.get<APIResponse<ShippingLogResponse[]>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/batch/${batchCode}`,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("📦 Batch orders:", response.data);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching batch orders:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Collect COD from customer
+   */
+  async collectCOD(
+    shippingLogId: string,
+    totalAmount: number
+  ): Promise<ShippingLogResponse> {
+    try {
+      const response = await axios.patch<APIResponse<ShippingLogResponse>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/${shippingLogId}/collect-cod`,
+        {
+          isCodCollected: true,
+          totalAmount,
+          codCollectDate: new Date().toISOString(),
+        },
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("💰 COD collected:", response.data);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error collecting COD:", error);
+      throw error;
+    }
   }
 
   /**
@@ -382,13 +521,13 @@ class OrderService {
     pictures: { uri: string; name: string; type: string }[]
   ): Promise<any> {
     const formData = new FormData();
-    
+
     // Add each picture to FormData
     pictures.forEach((picture, index) => {
-      formData.append('pictures', {
+      formData.append("pictures", {
         uri: picture.uri,
         name: picture.name || `photo_${index}.jpg`,
-        type: picture.type || 'image/jpeg',
+        type: picture.type || "image/jpeg",
       } as any);
     });
 
@@ -398,12 +537,12 @@ class OrderService {
       {
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       }
     );
 
-    console.log('📸 Pictures uploaded:', response.data);
+    console.log("📸 Pictures uploaded:", response.data);
     return response.data;
   }
 }
