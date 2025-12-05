@@ -1,4 +1,4 @@
-import OrderService from "@/services/order.service";
+import orderService from "@/services/order.service";
 import { Order, convertAPIOrderToAppOrder } from "@/types/order";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -26,7 +26,7 @@ export default function CODSummaryScreen() {
   const loadCODOrders = async () => {
     try {
       setLoading(true);
-      const response = await OrderService.getMyDeliveries();
+      const response = await orderService.getMyDeliveries();
       const allOrders = response.map(convertAPIOrderToAppOrder);
 
       // Filter only orders with COD collected

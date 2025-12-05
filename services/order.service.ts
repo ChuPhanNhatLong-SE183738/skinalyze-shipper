@@ -158,6 +158,7 @@ export interface ShippingLogResponse {
   deliveredDate: string | null;
   shippingStaff?: User;
   shippingStaffId: string | null;
+  batchCode?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -442,9 +443,9 @@ class OrderService {
     orderIds: string[],
     shippingStaffId: string,
     note?: string
-  ): Promise<ShippingLogResponse[]> {
+  ): Promise<any> {
     try {
-      const response = await axios.post<APIResponse<ShippingLogResponse[]>>(
+      const response = await axios.post<APIResponse<any>>(
         `${BACKEND_URL}/api/v1/shipping-logs/batch-delivery`,
         {
           orderIds,
@@ -457,6 +458,7 @@ class OrderService {
       );
 
       console.log("📦 Batch created:", response.data);
+      // Return the full data object which includes batchCode, orderCount, and shippingLogs
       return response.data.data;
     } catch (error) {
       console.error("Error creating batch:", error);
@@ -480,6 +482,127 @@ class OrderService {
       return response.data.data;
     } catch (error) {
       console.error("Error fetching batch orders:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all batches
+   */
+  async getAllBatches(): Promise<any[]> {
+    try {
+      const response = await axios.get<APIResponse<any[]>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/batches`,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("📦 All batches:", response.data);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching all batches:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Pickup batch (start delivery)
+   */
+  async pickupBatch(batchCode: string): Promise<any> {
+    try {
+      const response = await axios.post<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/batches/${batchCode}/pickup`,
+        {},
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("📦 Batch picked up:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error picking up batch:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+        throw new Error(
+          error.response.data?.message || "Không thể pickup batch"
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Update single order status in batch
+   */
+  async updateBatchOrderStatus(
+    batchCode: string,
+    orderId: string,
+    status: string,
+    data?: {
+      note?: string;
+      unexpectedCase?: string;
+      finishedPictures?: string[];
+    }
+  ): Promise<any> {
+    try {
+      const response = await axios.patch<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/batches/${batchCode}/orders/${orderId}`,
+        {
+          orderId,
+          status,
+          ...data,
+        },
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("📦 Batch order updated:", response.data);
+      return response.data.data;
+    } catch (error) {
+      console.error("Error updating batch order:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update multiple orders status in batch at once
+   * PATCH /api/v1/shipping-logs/batches/:batchCode/bulk-update
+   */
+  async updateBatchOrdersBulk(
+    batchCode: string,
+    updates: Array<{
+      orderId: string;
+      status: string;
+      note?: string;
+      unexpectedCase?: string;
+      finishedPictures?: string[];
+    }>
+  ): Promise<any> {
+    try {
+      const response = await axios.patch<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/batches/${batchCode}/bulk-update`,
+        {
+          updates,
+        },
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("📦 Batch orders bulk updated:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error bulk updating batch orders:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        throw new Error(
+          error.response.data?.message || "Không thể cập nhật batch orders"
+        );
+      }
       throw error;
     }
   }
@@ -544,6 +667,99 @@ class OrderService {
 
     console.log("📸 Pictures uploaded:", response.data);
     return response.data;
+  }
+
+  /**
+   * Upload batch completion photos
+   * POST /api/v1/shipping-logs/batches/:batchCode/upload-completion-photos
+   */
+  async uploadBatchPhotos(
+    batchCode: string,
+    pictures: { uri: string; name: string; type: string }[]
+  ): Promise<{ urls: string[] }> {
+    try {
+      const formData = new FormData();
+
+      console.log("📤 Uploading batch photos for:", batchCode);
+      console.log("📤 Number of photos:", pictures.length);
+
+      // Add each picture to FormData
+      pictures.forEach((picture, index) => {
+        console.log(`📷 Adding photo ${index + 1}:`, {
+          uri: picture.uri,
+          name: picture.name || `batch-proof-${index}.jpg`,
+          type: picture.type || "image/jpeg",
+        });
+        formData.append("photos", {
+          uri: picture.uri,
+          name: picture.name || `batch-proof-${index}.jpg`,
+          type: picture.type || "image/jpeg",
+        } as any);
+      });
+
+      const url = `${BACKEND_URL}/api/v1/shipping-logs/batches/${batchCode}/upload-completion-photos`;
+      console.log("📤 Uploading to:", url);
+
+      const response = await axios.post<APIResponse<{ photoUrls: string[] }>>(
+        url,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log("📸 Batch photos uploaded:", response.data);
+      const photoUrls = response.data.data.photoUrls;
+      console.log("📸 Photo URLs:", photoUrls);
+      return { urls: photoUrls };
+    } catch (error: any) {
+      console.error("Error uploading batch photos:", error);
+      if (error.response) {
+        console.error("❌ Response status:", error.response.status);
+        console.error("❌ Response data:", error.response.data);
+        console.error("❌ Response headers:", error.response.headers);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Complete batch delivery with proof photos
+   * POST /api/v1/shipping-logs/batches/:batchCode/complete
+   */
+  async completeBatch(
+    batchCode: string,
+    data: {
+      completionPhotos: string[];
+      completionNote?: string;
+      codCollected?: boolean;
+      totalCodAmount?: number;
+    }
+  ): Promise<any> {
+    try {
+      const response = await axios.post<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/shipping-logs/batches/${batchCode}/complete`,
+        data,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("✅ Batch completed:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error completing batch:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        throw new Error(
+          error.response.data?.message || "Không thể hoàn thành batch"
+        );
+      }
+      throw error;
+    }
   }
 }
 

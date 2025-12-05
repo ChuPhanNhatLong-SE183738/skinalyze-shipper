@@ -107,9 +107,13 @@ export default function CreateBatchScreen() {
 
       console.log("Batch creation result:", result);
 
-      // Handle different response structures
-      const batchCode = result?.[0]?.batchCode || result?.[0]?.batchId || "N/A";
-      const orderCount = result?.length || selectedOrders.length;
+      // Handle new response structure: { batchCode, orderCount, shippingLogs }
+      const batchCode =
+        result?.batchCode || result?.shippingLogs?.[0]?.batchCode || "N/A";
+      const orderCount =
+        result?.orderCount ||
+        result?.shippingLogs?.length ||
+        selectedOrders.length;
 
       Alert.alert(
         "Thành công",

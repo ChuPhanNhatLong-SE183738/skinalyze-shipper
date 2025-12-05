@@ -1,4 +1,4 @@
-import OrderService from "@/services/order.service";
+import orderService from "@/services/order.service";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -56,6 +56,8 @@ export default function BatchDetailScreen() {
   const { batchCode } = useLocalSearchParams<{ batchCode: string }>();
   const [orders, setOrders] = useState<BatchOrderItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadBatchOrders();
@@ -66,7 +68,7 @@ export default function BatchDetailScreen() {
 
     try {
       setLoading(true);
-      const data = await OrderService.getBatchOrders(batchCode);
+      const data = await orderService.getBatchOrders(batchCode);
       setOrders(data as any);
     } catch (error) {
       console.error("Error loading batch orders:", error);
@@ -92,17 +94,78 @@ export default function BatchDetailScreen() {
     return orders.filter((o) => o.status === "DELIVERED").length;
   };
 
+  const toggleOrderSelection = (orderId: string) => {
+    const newSelection = new Set(selectedOrders);
+    if (newSelection.has(orderId)) {
+      newSelection.delete(orderId);
+    } else {
+      newSelection.add(orderId);
+    }
+    setSelectedOrders(newSelection);
+  };
+
+  const handleBulkUpdate = () => {
+    if (selectedOrders.size === 0) {
+      Alert.alert("Thông báo", "Vui lòng chọn ít nhất 1 đơn hàng");
+      return;
+    }
+
+    const selectedOrdersData = orders
+      .filter((o) => selectedOrders.has(o.orderId))
+      .map((o) => ({
+        orderId: o.orderId,
+        shippingLogId: o.shippingLogId,
+        customerName: o.order.customer.user.fullName,
+        address: o.order.shippingAddress,
+      }));
+
+    router.push({
+      pathname: "/update-batch-bulk",
+      params: {
+        batchCode,
+        orders: JSON.stringify(selectedOrdersData),
+      },
+    });
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedOrders(new Set());
+  };
+
   const renderOrderItem = ({ item }: { item: BatchOrderItem }) => {
     const statusInfo =
       statusConfig[item.status as keyof typeof statusConfig] ||
       statusConfig.PENDING;
     const orderTotal = calculateOrderTotal(item.order);
 
+    const isSelected = selectedOrders.has(item.orderId);
+
     return (
       <TouchableOpacity
-        style={styles.orderItem}
-        onPress={() => router.push(`/order-detail?id=${item.shippingLogId}`)}
+        style={[styles.orderItem, isSelected && styles.orderItemSelected]}
+        onPress={() => {
+          if (selectionMode) {
+            toggleOrderSelection(item.orderId);
+          } else {
+            router.push(`/order-detail?id=${item.shippingLogId}`);
+          }
+        }}
       >
+        {/* Selection Checkbox */}
+        {selectionMode && (
+          <TouchableOpacity
+            style={styles.checkbox}
+            onPress={() => toggleOrderSelection(item.orderId)}
+          >
+            <Ionicons
+              name={isSelected ? "checkbox" : "square-outline"}
+              size={24}
+              color={isSelected ? "#2196F3" : "#999"}
+            />
+          </TouchableOpacity>
+        )}
+
         <View style={styles.orderHeader}>
           <View style={styles.orderTitleRow}>
             <Text style={styles.orderNumber}>
@@ -159,10 +222,34 @@ export default function BatchDetailScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.viewDetailButton}>
-          <Text style={styles.viewDetailText}>Xem chi tiết</Text>
-          <Ionicons name="chevron-forward" size={16} color="#2196F3" />
-        </TouchableOpacity>
+        {/* Action Buttons */}
+        {!selectionMode && (
+          <View style={styles.actionButtonsRow}>
+            {item.status !== "DELIVERED" && item.status !== "FAILED" && (
+              <TouchableOpacity
+                style={styles.updateStatusButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push(
+                    `/update-batch-order?batchCode=${batchCode}&orderId=${item.orderId}&shippingLogId=${item.shippingLogId}`
+                  );
+                }}
+              >
+                <Ionicons name="create" size={16} color="#fff" />
+                <Text style={styles.updateStatusText}>Cập nhật</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.viewDetailButton}
+              onPress={() =>
+                router.push(`/order-detail?id=${item.shippingLogId}`)
+              }
+            >
+              <Text style={styles.viewDetailText}>Xem chi tiết</Text>
+              <Ionicons name="chevron-forward" size={16} color="#2196F3" />
+            </TouchableOpacity>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -183,16 +270,49 @@ export default function BatchDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => {
+            if (selectionMode) {
+              exitSelectionMode();
+            } else {
+              router.back();
+            }
+          }}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons
+            name={selectionMode ? "close" : "arrow-back"}
+            size={24}
+            color="#333"
+          />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Chi tiết Batch</Text>
+          <Text style={styles.headerTitle}>
+            {selectionMode
+              ? `Đã chọn ${selectedOrders.size}`
+              : "Chi tiết Batch"}
+          </Text>
           <Text style={styles.headerSubtitle}>{batchCode}</Text>
         </View>
-        <View style={{ width: 24 }} />
+        {selectionMode ? (
+          <TouchableOpacity
+            style={styles.selectAllButton}
+            onPress={() => {
+              if (selectedOrders.size === orders.length) {
+                setSelectedOrders(new Set());
+              } else {
+                setSelectedOrders(new Set(orders.map((o) => o.orderId)));
+              }
+            }}
+          >
+            <Text style={styles.selectAllText}>
+              {selectedOrders.size === orders.length
+                ? "Bỏ chọn"
+                : "Chọn tất cả"}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
       </View>
 
       {/* Summary Cards */}
@@ -221,6 +341,53 @@ export default function BatchDetailScreen() {
           </View>
         </View>
       </View>
+      {/* Action Buttons */}
+      {orders.length > 0 && !selectionMode && (
+        <View style={styles.actionSection}>
+          <TouchableOpacity
+            style={styles.mapButton}
+            onPress={() => {
+              // Navigate to batch map view with all delivery locations
+              const locations = orders.map((o) => ({
+                orderId: o.orderId,
+                address: o.order.shippingAddress,
+                status: o.status,
+                customerName: o.order.customer.user.fullName,
+              }));
+              router.push({
+                pathname: "/batch-map",
+                params: {
+                  batchCode,
+                  locations: JSON.stringify(locations),
+                },
+              });
+            }}
+          >
+            <Ionicons name="map" size={20} color="#fff" />
+            <Text style={styles.mapButtonText}>Xem bản đồ</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.bulkUpdateButton}
+            onPress={() => setSelectionMode(true)}
+          >
+            <Ionicons name="checkmark-done-circle" size={20} color="#fff" />
+            <Text style={styles.bulkUpdateButtonText}>Chọn nhiều</Text>
+          </TouchableOpacity>
+
+          {getCompletedCount() === orders.length && (
+            <TouchableOpacity
+              style={styles.completeBatchButton}
+              onPress={() => {
+                router.push(`/complete-batch?batchCode=${batchCode}`);
+              }}
+            >
+              <Ionicons name="checkmark-done" size={20} color="#fff" />
+              <Text style={styles.completeBatchText}>Hoàn thành Batch</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Orders List */}
       <View style={styles.listSection}>
@@ -231,10 +398,28 @@ export default function BatchDetailScreen() {
           data={orders}
           renderItem={renderOrderItem}
           keyExtractor={(item) => item.shippingLogId}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            selectionMode && selectedOrders.size > 0 && { paddingBottom: 100 },
+          ]}
           showsVerticalScrollIndicator={false}
         />
       </View>
+
+      {/* Bulk Update Footer - Outside SafeAreaView to overlay */}
+      {selectionMode && selectedOrders.size > 0 && (
+        <View style={styles.bulkUpdateFooter}>
+          <TouchableOpacity
+            style={styles.bulkUpdateActionButton}
+            onPress={handleBulkUpdate}
+          >
+            <Ionicons name="sync" size={20} color="#fff" />
+            <Text style={styles.bulkUpdateActionText}>
+              Cập nhật {selectedOrders.size} đơn
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -422,12 +607,132 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#4CAF50",
   },
-  viewDetailButton: {
+  actionSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  mapButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#2196F3",
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  mapButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  bulkUpdateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#FF9800",
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  bulkUpdateButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  completeBatchButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#4CAF50",
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  completeBatchText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  selectAllButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  selectAllText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2196F3",
+  },
+  checkbox: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 10,
+  },
+  orderItemSelected: {
+    borderLeftColor: "#2196F3",
+    backgroundColor: "#E3F2FD",
+  },
+  bulkUpdateFooter: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  bulkUpdateActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#4CAF50",
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  bulkUpdateActionText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  actionButtonsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  updateStatusButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
+    backgroundColor: "#FF9800",
     paddingVertical: 8,
+    borderRadius: 8,
+  },
+  updateStatusText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  viewDetailButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: "#E3F2FD",
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   viewDetailText: {
     fontSize: 13,
