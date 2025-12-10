@@ -16,8 +16,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+type StatusType =
+  | "PENDING"
+  | "PICKED_UP"
+  | "IN_TRANSIT"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "FAILED"
+  | "RETURNED";
+
 interface StatusOption {
-  value: string;
+  value: StatusType;
   label: string;
   icon: string;
   color: string;
@@ -26,7 +35,28 @@ interface StatusOption {
   requiresNote?: boolean;
 }
 
-const STATUS_OPTIONS: StatusOption[] = [
+const ALL_STATUS_OPTIONS: StatusOption[] = [
+  {
+    value: "PENDING",
+    label: "Chờ xử lý",
+    icon: "time-outline",
+    color: "#9E9E9E",
+    description: "Đơn hàng đang chờ được xử lý",
+  },
+  {
+    value: "PICKED_UP",
+    label: "Đã lấy hàng",
+    icon: "checkmark-circle",
+    color: "#AB47BC",
+    description: "Đã nhận hàng từ kho/cửa hàng",
+  },
+  {
+    value: "IN_TRANSIT",
+    label: "Đang vận chuyển",
+    icon: "navigate",
+    color: "#9C27B0",
+    description: "Đang trên đường giao hàng",
+  },
   {
     value: "OUT_FOR_DELIVERY",
     label: "Đang giao hàng",
@@ -50,13 +80,56 @@ const STATUS_OPTIONS: StatusOption[] = [
     description: "Khách không nhận, đổi địa chỉ, v.v.",
     requiresNote: true,
   },
+  {
+    value: "RETURNED",
+    label: "Đã trả lại",
+    icon: "return-up-back",
+    color: "#FF6F00",
+    description: "Đã trả hàng về kho",
+  },
 ];
 
+// Function to get available status options based on current status
+const getAvailableStatusOptions = (currentStatus?: string): StatusOption[] => {
+  const normalizedStatus = currentStatus?.toUpperCase() as StatusType | undefined;
+
+  switch (normalizedStatus) {
+    case "PENDING":
+      return ALL_STATUS_OPTIONS;
+
+    case "PICKED_UP":
+      return ALL_STATUS_OPTIONS.filter((s) => s.value !== "PENDING");
+
+    case "IN_TRANSIT":
+      return ALL_STATUS_OPTIONS.filter(
+        (s) => s.value !== "PENDING" && s.value !== "PICKED_UP"
+      );
+
+    case "OUT_FOR_DELIVERY":
+      return ALL_STATUS_OPTIONS.filter((s) =>
+        ["OUT_FOR_DELIVERY", "DELIVERED", "FAILED", "RETURNED"].includes(s.value)
+      );
+
+    case "DELIVERED":
+      return ALL_STATUS_OPTIONS.filter((s) => s.value === "DELIVERED");
+
+    case "FAILED":
+    case "RETURNED":
+      return ALL_STATUS_OPTIONS.filter((s) =>
+        ["FAILED", "RETURNED"].includes(s.value)
+      );
+
+    default:
+      return ALL_STATUS_OPTIONS;
+  }
+};
+
 export default function UpdateBatchOrderScreen() {
-  const { batchCode, orderId, shippingLogId } = useLocalSearchParams<{
+  const { batchCode, orderId, shippingLogId, currentStatus } = useLocalSearchParams<{
     batchCode: string;
     orderId: string;
     shippingLogId: string;
+    currentStatus?: string;
   }>();
 
   const [selectedStatus, setSelectedStatus] = useState<string>("");
@@ -64,6 +137,9 @@ export default function UpdateBatchOrderScreen() {
   const [unexpectedCase, setUnexpectedCase] = useState("");
   const [pictures, setPictures] = useState<string[]>([]);
   const [updating, setUpdating] = useState(false);
+
+  // Get available status options based on current status
+  const availableStatusOptions = getAvailableStatusOptions(currentStatus);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -112,7 +188,7 @@ export default function UpdateBatchOrderScreen() {
       return;
     }
 
-    const statusOption = STATUS_OPTIONS.find((s) => s.value === selectedStatus);
+    const statusOption = availableStatusOptions.find((s) => s.value === selectedStatus);
 
     if (statusOption?.requiresPhotos && pictures.length === 0) {
       Alert.alert("Lỗi", "Vui lòng chụp ảnh bằng chứng giao hàng");
@@ -189,7 +265,7 @@ export default function UpdateBatchOrderScreen() {
 
         {/* Status Selection */}
         <Text style={styles.sectionTitle}>Chọn trạng thái</Text>
-        {STATUS_OPTIONS.map((status) => (
+        {availableStatusOptions.map((status) => (
           <TouchableOpacity
             key={status.value}
             style={[

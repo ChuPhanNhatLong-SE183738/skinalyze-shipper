@@ -214,20 +214,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Đơn hàng</Text>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Ionicons name="notifications-outline" size={24} color="#333" />
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {availableOrders.length +
-                myOrders.filter((o) => o.status === "delivering").length}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
+    <View style={styles.container}>
       {/* Main Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
@@ -373,7 +360,7 @@ export default function HomeScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

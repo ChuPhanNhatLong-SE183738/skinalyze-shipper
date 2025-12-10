@@ -1,6 +1,6 @@
-import { BACKEND_URL } from '@/config/env';
-import axios from 'axios';
-import StorageService from './storage.service';
+import { BACKEND_URL } from "@/config/env";
+import axios from "axios";
+import StorageService from "./storage.service";
 
 export interface LoginRequest {
   email: string;
@@ -34,7 +34,7 @@ class AuthService {
   /**
    * Login with email and password
    */
-  async login(email: string, password: string): Promise<LoginResponse['data']> {
+  async login(email: string, password: string): Promise<LoginResponse["data"]> {
     try {
       const response = await axios.post<LoginResponse>(
         `${BACKEND_URL}/api/v1/auth/login`,
@@ -44,25 +44,25 @@ class AuthService {
         },
         {
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
 
       const { access_token, user, refresh_token } = response.data.data;
 
-      console.log('User role:', user.role);
+      console.log("User role:", user);
       // Kiểm tra role phải là STAFF
-      if (user.role !== 'staff') {
-        throw new Error('Chỉ nhân viên mới có thể đăng nhập vào ứng dụng này');
+      if (user.role !== "staff") {
+        throw new Error("Chỉ nhân viên mới có thể đăng nhập vào ứng dụng này");
       }
 
       // Lưu token và user info vào storage
       await StorageService.saveAccessToken(access_token);
       await StorageService.saveUserInfo(user);
-      
+
       if (refresh_token) {
-        await StorageService.saveSecure('refresh_token', refresh_token);
+        await StorageService.saveSecure("refresh_token", refresh_token);
       }
 
       this.accessToken = access_token;
@@ -70,18 +70,20 @@ class AuthService {
 
       return response.data.data;
     } catch (error: any) {
-      console.error('Login error:', error);
-      
-      if (error.message === 'Chỉ nhân viên mới có thể đăng nhập vào ứng dụng này') {
+      console.error("Login error:", error);
+
+      if (
+        error.message === "Chỉ nhân viên mới có thể đăng nhập vào ứng dụng này"
+      ) {
         throw error;
       }
-      
+
       if (axios.isAxiosError(error)) {
-        const message = error.response?.data?.message || 'Đăng nhập thất bại';
+        const message = error.response?.data?.message || "Đăng nhập thất bại";
         throw new Error(message);
       }
-      
-      throw new Error('Đăng nhập thất bại. Vui lòng thử lại.');
+
+      throw new Error("Đăng nhập thất bại. Vui lòng thử lại.");
     }
   }
 
@@ -95,7 +97,7 @@ class AuthService {
       this.accessToken = null;
       this.userInfo = null;
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       throw error;
     }
   }
@@ -115,7 +117,7 @@ class AuthService {
       }
       return false;
     } catch (error) {
-      console.error('Error loading auth data:', error);
+      console.error("Error loading auth data:", error);
       return false;
     }
   }
@@ -145,7 +147,7 @@ class AuthService {
    * Check if user is staff
    */
   isStaff(): boolean {
-    return this.userInfo?.role === 'STAFF';
+    return this.userInfo?.role === "STAFF";
   }
 }
 

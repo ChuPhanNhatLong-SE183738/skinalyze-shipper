@@ -1,7 +1,5 @@
 import DeliveryMap from "@/components/delivery-map";
 import ETADisplay from "@/components/eta-display";
-import VehicleSelector from "@/components/vehicle-selector";
-import { VehicleType } from "@/services/location-tracking.api";
 import OrderService from "@/services/order.service";
 import { Order, convertAPIOrderToAppOrder } from "@/types/order";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,7 +46,6 @@ export default function OrderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [isCardExpanded, setIsCardExpanded] = useState(false);
   const [fullOrderDetails, setFullOrderDetails] = useState<any>(null);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>("bike");
 
   useEffect(() => {
     loadOrderDetail();
@@ -442,21 +439,11 @@ export default function OrderDetailScreen() {
           )}
         </ScrollView>
 
-        {/* Vehicle Selector */}
-        <View style={styles.vehicleSelectorContainer}>
-          <VehicleSelector
-            selectedVehicle={selectedVehicle}
-            onVehicleChange={setSelectedVehicle}
-            disabled={false}
-          />
-        </View>
-
         <View style={styles.etaContainerBottom}>
           <ETADisplay
             orderId={order.orderId}
             enabled={true}
             compact={true}
-            vehicle={selectedVehicle}
           />
         </View>
 
@@ -512,25 +499,13 @@ export default function OrderDetailScreen() {
         {((order.status as any) === "picking" ||
           (order.status as any) === "delivering" ||
           (order.status as any) === "in_transit") && (
-          <>
-            {/* Vehicle Selector */}
-            <View style={styles.section}>
-              <VehicleSelector
-                selectedVehicle={selectedVehicle}
-                onVehicleChange={setSelectedVehicle}
-                disabled={false}
-              />
-            </View>
-
-            <View style={styles.section}>
-              <ETADisplay
-                orderId={order.orderId}
-                enabled={true}
-                compact={false}
-                vehicle={selectedVehicle}
-              />
-            </View>
-          </>
+          <View style={styles.section}>
+            <ETADisplay
+              orderId={order.orderId}
+              enabled={true}
+              compact={false}
+            />
+          </View>
         )}
 
         {/* Order Info */}
@@ -1082,19 +1057,11 @@ const styles = StyleSheet.create({
   etaContainerBottom: {
     backgroundColor: "#ffffff",
     position: "absolute",
-    top: 280, // Tăng thêm để có chỗ cho vehicle selector
+    top: 220,
     left: 16,
     right: 16,
     zIndex: 10,
     elevation: 3,
-  },
-  vehicleSelectorContainer: {
-    position: "absolute",
-    top: 220, // Ngay trên ETA
-    left: 16,
-    right: 16,
-    zIndex: 11,
-    elevation: 4,
   },
   floatingActions: {
     position: "absolute",

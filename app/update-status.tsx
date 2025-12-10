@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type StatusType =
+  | "PENDING"
   | "PICKED_UP"
   | "IN_TRANSIT"
   | "OUT_FOR_DELIVERY"
@@ -30,7 +31,14 @@ interface StatusOption {
   color: string;
 }
 
-const STATUS_OPTIONS: StatusOption[] = [
+const ALL_STATUS_OPTIONS: StatusOption[] = [
+  {
+    value: "PENDING",
+    label: "Chờ xử lý",
+    description: "Đơn hàng đang chờ được xử lý",
+    icon: "time-outline",
+    color: "#9E9E9E",
+  },
   {
     value: "PICKED_UP",
     label: "Đã lấy hàng",
@@ -75,6 +83,49 @@ const STATUS_OPTIONS: StatusOption[] = [
   },
 ];
 
+// Function to get available status options based on current status
+const getAvailableStatusOptions = (currentStatus?: string): StatusOption[] => {
+  // Normalize current status to uppercase
+  const normalizedStatus = currentStatus?.toUpperCase() as StatusType | undefined;
+
+  switch (normalizedStatus) {
+    case "PENDING":
+      // PENDING can go to any status
+      return ALL_STATUS_OPTIONS;
+
+    case "PICKED_UP":
+      // Hide PENDING
+      return ALL_STATUS_OPTIONS.filter((s) => s.value !== "PENDING");
+
+    case "IN_TRANSIT":
+      // Hide PENDING and PICKED_UP
+      return ALL_STATUS_OPTIONS.filter(
+        (s) => s.value !== "PENDING" && s.value !== "PICKED_UP"
+      );
+
+    case "OUT_FOR_DELIVERY":
+      // Only show OUT_FOR_DELIVERY, DELIVERED, FAILED, RETURNED
+      return ALL_STATUS_OPTIONS.filter((s) =>
+        ["OUT_FOR_DELIVERY", "DELIVERED", "FAILED", "RETURNED"].includes(s.value)
+      );
+
+    case "DELIVERED":
+      // Only show DELIVERED (cannot change anymore)
+      return ALL_STATUS_OPTIONS.filter((s) => s.value === "DELIVERED");
+
+    case "FAILED":
+    case "RETURNED":
+      // Only allow FAILED or RETURNED
+      return ALL_STATUS_OPTIONS.filter((s) =>
+        ["FAILED", "RETURNED"].includes(s.value)
+      );
+
+    default:
+      // If no current status or unknown status, show all options
+      return ALL_STATUS_OPTIONS;
+  }
+};
+
 export default function UpdateStatusScreen() {
   const { id, currentStatus } = useLocalSearchParams<{
     id: string;
@@ -84,6 +135,9 @@ export default function UpdateStatusScreen() {
   const [note, setNote] = useState("");
   const [unexpectedCase, setUnexpectedCase] = useState("");
   const [updating, setUpdating] = useState(false);
+
+  // Get available status options based on current status
+  const availableStatusOptions = getAvailableStatusOptions(currentStatus);
 
   const handleUpdateStatus = async () => {
     if (!selectedStatus) {
@@ -193,7 +247,7 @@ export default function UpdateStatusScreen() {
 
         {/* Status Options */}
         <Text style={styles.sectionTitle}>Chọn trạng thái mới:</Text>
-        {STATUS_OPTIONS.map(renderStatusOption)}
+        {availableStatusOptions.map(renderStatusOption)}
 
         {/* Note Input */}
         <View style={styles.inputSection}>
