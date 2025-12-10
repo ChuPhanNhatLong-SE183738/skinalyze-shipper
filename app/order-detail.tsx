@@ -1,5 +1,6 @@
 import DeliveryMap from "@/components/delivery-map";
 import ETADisplay from "@/components/eta-display";
+import { useLocationTracking } from "@/hooks/use-location-tracking";
 import OrderService from "@/services/order.service";
 import { Order, convertAPIOrderToAppOrder } from "@/types/order";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,6 +18,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// ⚙️ CONFIGURATION: Maximum distance to allow completing order (in meters)
+// Chỉnh giá trị này để test: 2000 = 2km, 1000 = 1km, v.v.
+// 999999999 = ~1 triệu km (để test khi đang ở xa)
+const MAX_DISTANCE_TO_COMPLETE = 999999999; // meters (cho phép bất kỳ khoảng cách nào)
 
 const statusColors = {
   pending: "#FFA726",
@@ -46,6 +52,21 @@ export default function OrderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [isCardExpanded, setIsCardExpanded] = useState(false);
   const [fullOrderDetails, setFullOrderDetails] = useState<any>(null);
+
+  // Track location to get current distance to customer
+  const { currentETA } = useLocationTracking({
+    orderId: id,
+    enabled:
+      !!order &&
+      (order.status === "delivering" || (order.status as any) === "in_transit"),
+    intervalMs: 10000,
+  });
+
+  // Check if shipper is close enough to complete order
+  // If MAX_DISTANCE is very large (999999999), always allow completion
+  const isCloseEnoughToComplete = currentETA
+    ? currentETA.distance <= MAX_DISTANCE_TO_COMPLETE
+    : MAX_DISTANCE_TO_COMPLETE >= 999999999; // Allow if no ETA data and distance check is disabled
 
   useEffect(() => {
     loadOrderDetail();
@@ -109,6 +130,18 @@ export default function OrderDetailScreen() {
 
   const handleCompleteOrder = async () => {
     if (!order) return;
+
+    // Check if shipper is close enough to complete
+    if (!isCloseEnoughToComplete && currentETA) {
+      const distanceKm = (currentETA.distance / 1000).toFixed(1);
+      const maxDistanceKm = (MAX_DISTANCE_TO_COMPLETE / 1000).toFixed(1);
+      Alert.alert(
+        "Chưa thể hoàn thành",
+        `Bạn cần đến gần hơn để hoàn thành đơn hàng.\n\nKhoảng cách hiện tại: ${distanceKm} km\nKhoảng cách tối đa: ${maxDistanceKm} km`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
 
     // Navigate to upload pictures screen
     router.push(`/upload-pictures?id=${id}` as any);
@@ -440,11 +473,7 @@ export default function OrderDetailScreen() {
         </ScrollView>
 
         <View style={styles.etaContainerBottom}>
-          <ETADisplay
-            orderId={order.orderId}
-            enabled={true}
-            compact={true}
-          />
+          <ETADisplay orderId={order.orderId} enabled={true} compact={true} />
         </View>
 
         {/* Action Buttons */}
@@ -461,11 +490,22 @@ export default function OrderDetailScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButtonFloating, styles.completeButtonFloating]}
+            style={[
+              styles.actionButtonFloating,
+              styles.completeButtonFloating,
+              !isCloseEnoughToComplete && styles.completeButtonFloatingDisabled,
+            ]}
             onPress={handleCompleteOrder}
+            disabled={!isCloseEnoughToComplete}
           >
             <Ionicons name="checkmark" size={28} color="#fff" />
-            <Text style={styles.actionButtonTextFloating}>Hoàn thành</Text>
+            <Text style={styles.actionButtonTextFloating}>
+              {isCloseEnoughToComplete
+                ? "Hoàn thành"
+                : currentETA
+                ? `${(currentETA.distance / 1000).toFixed(1)} km`
+                : "..."}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -688,10 +728,21 @@ export default function OrderDetailScreen() {
 
         {(order.status as any) === "delivering" && (
           <TouchableOpacity
-            style={[styles.actionButton, styles.completeButton]}
+            style={[
+              styles.actionButton,
+              styles.completeButton,
+              !isCloseEnoughToComplete && styles.completeButtonDisabled,
+            ]}
             onPress={handleCompleteOrder}
+            disabled={!isCloseEnoughToComplete}
           >
-            <Text style={styles.actionButtonText}>Hoàn thành</Text>
+            <Text style={styles.actionButtonText}>
+              {isCloseEnoughToComplete
+                ? "Hoàn thành"
+                : currentETA
+                ? `Còn cách ${(currentETA.distance / 1000).toFixed(1)} km`
+                : "Đang tính khoảng cách..."}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -954,6 +1005,10 @@ const styles = StyleSheet.create({
   completeButton: {
     backgroundColor: "#66BB6A",
   },
+  completeButtonDisabled: {
+    backgroundColor: "#BDBDBD",
+    opacity: 0.6,
+  },
   backButton: {
     backgroundColor: "#42A5F5",
     paddingHorizontal: 24,
@@ -1092,6 +1147,10 @@ const styles = StyleSheet.create({
   completeButtonFloating: {
     backgroundColor: "#66BB6A",
     gap: 8,
+  },
+  completeButtonFloatingDisabled: {
+    backgroundColor: "#BDBDBD",
+    opacity: 0.6,
   },
   actionButtonTextFloating: {
     color: "#fff",
