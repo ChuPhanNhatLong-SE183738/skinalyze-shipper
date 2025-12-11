@@ -48,7 +48,7 @@ export default function ProfileScreen() {
 
   const loadUserInfo = async () => {
     try {
-      const user = AuthService.getUserInfo();
+      const user = await AuthService.getUserInfo();
       setUserInfo(user);
     } catch (error) {
       console.error("Error loading user info:", error);
@@ -148,7 +148,9 @@ export default function ProfileScreen() {
           <Text style={styles.name}>{userInfo.fullName || "No name"}</Text>
           <View style={styles.roleBadge}>
             <Ionicons name="briefcase" size={16} color="#2196F3" />
-            <Text style={styles.roleText}>{userInfo.role.toUpperCase()}</Text>
+            <Text style={styles.roleText}>
+              {userInfo.role ? userInfo.role.toUpperCase() : "UNKNOWN"}
+            </Text>
           </View>
         </View>
 

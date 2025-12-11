@@ -761,6 +761,253 @@ class OrderService {
       throw error;
     }
   }
+
+  // ==================== RETURN REQUESTS APIs ====================
+
+  /**
+   * Get all return requests (with optional status filter)
+   * GET /api/v1/return-requests
+   */
+  async getAllReturnRequests(status?: string): Promise<any[]> {
+    try {
+      const params = status ? { status } : {};
+      const response = await axios.get<APIResponse<any[]>>(
+        `${BACKEND_URL}/api/v1/return-requests`,
+        {
+          params,
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("📦 Return requests loaded:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error loading return requests:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get pending return requests
+   * GET /api/v1/return-requests/pending
+   */
+  async getPendingReturnRequests(): Promise<any[]> {
+    try {
+      const response = await axios.get<APIResponse<any[]>>(
+        `${BACKEND_URL}/api/v1/return-requests/pending`,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("⏳ Pending return requests:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error loading pending returns:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get return request detail by ID
+   * GET /api/v1/return-requests/:id
+   */
+  async getReturnRequestDetail(returnRequestId: string): Promise<any> {
+    try {
+      const response = await axios.get<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/return-requests/${returnRequestId}`,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("📋 Return request detail:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error loading return request detail:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Approve return request
+   * PATCH /api/v1/return-requests/:id/approve
+   */
+  async approveReturnRequest(
+    returnRequestId: string,
+    reviewNote?: string
+  ): Promise<any> {
+    try {
+      const response = await axios.patch<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/return-requests/${returnRequestId}/approve`,
+        { reviewNote },
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("✅ Return request approved:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error approving return request:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        throw new Error(
+          error.response.data?.message || "Không thể duyệt yêu cầu trả hàng"
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Reject return request
+   * PATCH /api/v1/return-requests/:id/reject
+   */
+  async rejectReturnRequest(
+    returnRequestId: string,
+    reviewNote?: string
+  ): Promise<any> {
+    try {
+      const response = await axios.patch<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/return-requests/${returnRequestId}/reject`,
+        { reviewNote },
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("❌ Return request rejected:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error rejecting return request:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        throw new Error(
+          error.response.data?.message || "Không thể từ chối yêu cầu trả hàng"
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Assign staff to handle return request
+   * PATCH /api/v1/return-requests/:id/assign
+   */
+  async assignReturnRequest(returnRequestId: string): Promise<any> {
+    try {
+      const response = await axios.patch<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/return-requests/${returnRequestId}/assign`,
+        {},
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("👤 Return request assigned:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error assigning return request:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        throw new Error(
+          error.response.data?.message || "Không thể nhận việc trả hàng"
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Complete return request (confirm returned to warehouse)
+   * PATCH /api/v1/return-requests/:id/complete
+   */
+  async completeReturnRequest(
+    returnRequestId: string,
+    data: {
+      completionNote?: string;
+      returnCompletionPhotos?: string[];
+    }
+  ): Promise<any> {
+    try {
+      const response = await axios.patch<APIResponse<any>>(
+        `${BACKEND_URL}/api/v1/return-requests/${returnRequestId}/complete`,
+        data,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      console.log("✅ Return request completed:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error completing return request:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        throw new Error(
+          error.response.data?.message || "Không thể hoàn thành xử lý trả hàng"
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Upload return completion photos
+   * POST /api/v1/return-requests/:id/upload-completion-photos
+   */
+  async uploadReturnCompletionPhotos(
+    returnRequestId: string,
+    pictures: { uri: string; name: string; type: string }[]
+  ): Promise<{ photoUrls: string[] }> {
+    try {
+      const formData = new FormData();
+
+      console.log("📤 Uploading return completion photos...");
+      console.log("📤 Number of photos:", pictures.length);
+
+      pictures.forEach((picture, index) => {
+        console.log(`📷 Adding photo ${index + 1}:`, {
+          uri: picture.uri,
+          name: picture.name || `return-proof-${index}.jpg`,
+          type: picture.type || "image/jpeg",
+        });
+        formData.append("photos", {
+          uri: picture.uri,
+          name: picture.name || `return-proof-${index}.jpg`,
+          type: picture.type || "image/jpeg",
+        } as any);
+      });
+
+      const url = `${BACKEND_URL}/api/v1/return-requests/${returnRequestId}/upload-completion-photos`;
+      console.log("📤 Uploading to:", url);
+
+      const response = await axios.post<APIResponse<{ photoUrls: string[] }>>(
+        url,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log("📸 Return photos uploaded:", response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error uploading return photos:", error);
+      if (error.response) {
+        console.error("❌ Response status:", error.response.status);
+        console.error("❌ Response data:", error.response.data);
+      }
+      throw error;
+    }
+  }
 }
 
 export default new OrderService();

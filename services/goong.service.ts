@@ -130,29 +130,70 @@ class GoongService {
   }
 
   /**
-   * Tìm kiếm địa điểm
+   * Autocomplete - Tìm kiếm địa điểm với gợi ý
    */
-  async searchPlaces(input: string, location?: { lat: number; lng: number }) {
+  async autocomplete(
+    input: string,
+    location?: { lat: number; lng: number },
+    options?: {
+      limit?: number;
+      radius?: number;
+      more_compound?: boolean;
+    }
+  ) {
     try {
       const params: any = {
         input,
         api_key: GOONG_API_KEY,
+        has_deprecated_administrative_unit: true,
+        limit: options?.limit || 10,
       };
-      
+
       if (location) {
         params.location = `${location.lat},${location.lng}`;
-        params.radius = 50000; // 50km
+        params.origin = `${location.lat},${location.lng}`;
+        params.radius = options?.radius || 50;
       }
 
-      const response = await axios.get(`${this.baseURL}/Place/AutoComplete`, {
-        params,
-      });
-      
+      if (options?.more_compound) {
+        params.more_compound = true;
+      }
+
+      const response = await axios.get(
+        `${this.baseURL}/Place/AutoComplete`,
+        { params }
+      );
+
       return response.data.predictions || [];
     } catch (error) {
-      console.error('Error searching places:', error);
+      console.error("Error in autocomplete:", error);
       throw error;
     }
+  }
+
+  /**
+   * Get place detail by place_id
+   */
+  async getPlaceDetail(placeId: string): Promise<GoongPlaceDetail> {
+    try {
+      const response = await axios.get(`${this.baseURL}/Place/Detail`, {
+        params: {
+          place_id: placeId,
+          api_key: GOONG_API_KEY,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error getting place detail:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Tìm kiếm địa điểm (legacy method for backward compatibility)
+   */
+  async searchPlaces(input: string, location?: { lat: number; lng: number }) {
+    return this.autocomplete(input, location);
   }
 
   /**

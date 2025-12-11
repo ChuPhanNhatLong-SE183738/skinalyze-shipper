@@ -125,22 +125,53 @@ class AuthService {
   /**
    * Get current access token
    */
-  getAccessToken(): string | null {
-    return this.accessToken;
+  async getAccessToken(): Promise<string | null> {
+    if (this.accessToken) {
+      return this.accessToken;
+    }
+    // Try to load from storage if not in memory
+    const token = await StorageService.getAccessToken();
+    if (token) {
+      this.accessToken = token;
+    }
+    return token;
   }
 
   /**
    * Get current user info
    */
-  getUserInfo(): any {
-    return this.userInfo;
+  async getUserInfo(): Promise<any> {
+    if (this.userInfo) {
+      return this.userInfo;
+    }
+    // Try to load from storage if not in memory
+    const user = await StorageService.getUserInfo();
+    if (user) {
+      this.userInfo = user;
+    }
+    return user;
   }
 
   /**
    * Check if user is authenticated
    */
-  isAuthenticated(): boolean {
-    return !!this.accessToken && !!this.userInfo;
+  async isAuthenticated(): Promise<boolean> {
+    // If already in memory, return immediately
+    if (this.accessToken && this.userInfo) {
+      return true;
+    }
+
+    // Try to load from storage
+    const token = await StorageService.getAccessToken();
+    const user = await StorageService.getUserInfo();
+
+    if (token && user) {
+      this.accessToken = token;
+      this.userInfo = user;
+      return true;
+    }
+
+    return false;
   }
 
   /**

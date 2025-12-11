@@ -214,7 +214,15 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Đơn hàng</Text>
+        <TouchableOpacity onPress={loadOrders} style={styles.refreshButton}>
+          <Ionicons name="refresh" size={24} color="#4CAF50" />
+        </TouchableOpacity>
+      </View>
+
       {/* Main Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
@@ -360,7 +368,7 @@ export default function HomeScreen() {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
