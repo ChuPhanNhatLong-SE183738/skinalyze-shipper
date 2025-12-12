@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AuthService from '@/services/auth.service';
+import setupHttpInterceptors from '@/services/http-interceptor';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -19,12 +20,14 @@ export default function RootLayout() {
   const segments = useSegments();
 
   useEffect(() => {
+    // Setup HTTP interceptors for auto-logout on 401
+    setupHttpInterceptors();
     checkAuthentication();
   }, []);
 
   const checkAuthentication = async () => {
     try {
-      const hasAuth = await AuthService.loadAuthData();
+      const hasAuth = await AuthService.isAuthenticated();
       setIsAuthenticated(hasAuth);
     } catch (error) {
       console.error('Auth check error:', error);
@@ -32,17 +35,46 @@ export default function RootLayout() {
     }
   };
 
-  // Handle navigation based on auth state
+  // Re-check authentication when navigating to protected routes
+  useEffect(() => {
+    const recheckAuth = async () => {
+      const currentPath = segments.join('/');
+
+      // Only re-check if navigating to tabs
+      if (currentPath.includes('tabs')) {
+        const hasAuth = await AuthService.isAuthenticated();
+        if (hasAuth && isAuthenticated !== true) {
+          setIsAuthenticated(true);
+        } else if (!hasAuth && isAuthenticated !== false) {
+          setIsAuthenticated(false);
+        }
+      }
+      // If on login page, ensure we're marked as not authenticated
+      else if (currentPath === 'login' && isAuthenticated === true) {
+        const hasAuth = await AuthService.isAuthenticated();
+        if (!hasAuth) {
+          setIsAuthenticated(false);
+        }
+      }
+    };
+
+    if (isAuthenticated !== null) {
+      recheckAuth();
+    }
+  }, [segments]);
+
+  // Handle navigation based on auth state (avoid infinite loops)
   useEffect(() => {
     if (isAuthenticated === null) return;
 
     const currentPath = segments.join('/');
 
-    if (!isAuthenticated && currentPath !== 'login') {
+    // Prevent loop: only redirect if not already on the target page
+    if (!isAuthenticated && currentPath !== 'login' && currentPath !== '') {
       // Not authenticated and not on login page, redirect to login
       router.replace('/login');
-    } else if (isAuthenticated && currentPath === 'login') {
-      // Authenticated but on login page, redirect to tabs
+    } else if (isAuthenticated && (currentPath === 'login' || currentPath === '')) {
+      // Authenticated but on login page or root, redirect to tabs
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, segments]);
