@@ -22,6 +22,7 @@ interface OrderUpdate {
   shippingLogId: string;
   customerName: string;
   address: string;
+  currentStatus?: string; // Current status of the order
   status: "OUT_FOR_DELIVERY" | "DELIVERED" | "FAILED";
   note?: string;
   unexpectedCase?: string;
@@ -55,9 +56,10 @@ const statusOptions = [
 ];
 
 export default function UpdateBatchBulkScreen() {
-  const { batchCode, orders: ordersParam } = useLocalSearchParams<{
+  const { batchCode, orders: ordersParam, batchStatus } = useLocalSearchParams<{
     batchCode: string;
     orders: string;
+    batchStatus?: string;
   }>();
 
   const [orders, setOrders] = useState<OrderUpdate[]>([]);
@@ -65,6 +67,7 @@ export default function UpdateBatchBulkScreen() {
   const [commonNote, setCommonNote] = useState("");
   const [commonPhotos, setCommonPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [disabledStatuses, setDisabledStatuses] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (ordersParam) {
@@ -75,12 +78,21 @@ export default function UpdateBatchBulkScreen() {
           shippingLogId: o.shippingLogId,
           customerName: o.customerName,
           address: o.address,
+          currentStatus: o.currentStatus,
           status: "DELIVERED" as const,
           note: "",
           unexpectedCase: "",
           photos: [],
         }));
         setOrders(initialOrders);
+
+        // Collect all unique current statuses to disable them
+        const currentStatuses = new Set<string>(
+          parsed
+            .map((o: any) => o.currentStatus as string)
+            .filter((status: string) => status)
+        );
+        setDisabledStatuses(currentStatuses);
       } catch (error) {
         console.error("Error parsing orders:", error);
         Alert.alert("Lỗi", "Không thể tải thông tin đơn hàng");
@@ -336,33 +348,65 @@ export default function UpdateBatchBulkScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Chọn trạng thái chung</Text>
           <View style={styles.statusGrid}>
-            {statusOptions.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.statusCard,
-                  commonStatus === option.value && styles.statusCardActive,
-                  { borderColor: option.color },
-                ]}
-                onPress={() => setCommonStatus(option.value)}
-              >
-                <Ionicons
-                  name={option.icon as any}
-                  size={32}
-                  color={commonStatus === option.value ? option.color : "#999"}
-                />
-                <Text style={styles.statusLabel}>{option.label}</Text>
-                <Text style={styles.statusDescription}>
-                  {option.description}
-                </Text>
-                {option.requiresPhotos && (
-                  <Text style={styles.statusRequirement}>Cần ảnh</Text>
-                )}
-                {option.requiresReason && (
-                  <Text style={styles.statusRequirement}>Cần lý do</Text>
-                )}
-              </TouchableOpacity>
-            ))}
+            {statusOptions.map((option) => {
+              const isDisabled = disabledStatuses.has(option.value);
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.statusCard,
+                    commonStatus === option.value && styles.statusCardActive,
+                    { borderColor: option.color },
+                    isDisabled && styles.statusCardDisabled,
+                  ]}
+                  onPress={() => {
+                    if (!isDisabled) {
+                      setCommonStatus(option.value);
+                    }
+                  }}
+                  disabled={isDisabled}
+                >
+                  <Ionicons
+                    name={option.icon as any}
+                    size={32}
+                    color={
+                      isDisabled
+                        ? "#ccc"
+                        : commonStatus === option.value
+                        ? option.color
+                        : "#999"
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.statusLabel,
+                      isDisabled && styles.statusLabelDisabled,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.statusDescription,
+                      isDisabled && styles.statusDescriptionDisabled,
+                    ]}
+                  >
+                    {option.description}
+                  </Text>
+                  {isDisabled && (
+                    <Text style={styles.statusDisabledBadge}>
+                      Đang ở trạng thái này
+                    </Text>
+                  )}
+                  {!isDisabled && option.requiresPhotos && (
+                    <Text style={styles.statusRequirement}>Cần ảnh</Text>
+                  )}
+                  {!isDisabled && option.requiresReason && (
+                    <Text style={styles.statusRequirement}>Cần lý do</Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -586,11 +630,19 @@ const styles = StyleSheet.create({
   statusCardActive: {
     backgroundColor: "#f5f5f5",
   },
+  statusCardDisabled: {
+    opacity: 0.4,
+    backgroundColor: "#f9f9f9",
+    borderColor: "#ccc",
+  },
   statusLabel: {
     fontSize: 14,
     fontWeight: "600",
     color: "#333",
     marginTop: 8,
+  },
+  statusLabelDisabled: {
+    color: "#999",
   },
   statusDescription: {
     fontSize: 11,
@@ -598,11 +650,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
   },
+  statusDescriptionDisabled: {
+    color: "#aaa",
+  },
   statusRequirement: {
     fontSize: 10,
     color: "#FF9800",
     marginTop: 4,
     fontWeight: "600",
+  },
+  statusDisabledBadge: {
+    fontSize: 10,
+    color: "#EF5350",
+    marginTop: 4,
+    fontWeight: "600",
+    textAlign: "center",
   },
   photoCount: {
     fontSize: 13,

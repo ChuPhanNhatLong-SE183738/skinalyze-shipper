@@ -117,6 +117,7 @@ export default function BatchDetailScreen() {
         shippingLogId: o.shippingLogId,
         customerName: o.order.customer.user.fullName,
         address: o.order.shippingAddress,
+        currentStatus: o.status, // Pass current status
       }));
 
     router.push({
@@ -738,5 +739,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#2196F3",
+  },
+  testUploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#1976D2",
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  testUploadButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#fff",
   },
 });

@@ -677,19 +677,25 @@ class OrderService {
     batchCode: string,
     pictures: { uri: string; name: string; type: string }[]
   ): Promise<{ urls: string[] }> {
+    console.log("🚀 [BATCH FLOW] Starting batch photo upload process");
+    console.log(`📦 [BATCH FLOW] Batch Code: ${batchCode}`);
+    console.log(`📸 [BATCH FLOW] Total photos to upload: ${pictures.length}`);
+
     try {
       const formData = new FormData();
 
-      console.log("📤 Uploading batch photos for:", batchCode);
-      console.log("📤 Number of photos:", pictures.length);
+      console.log("📤 [BATCH FLOW] Preparing FormData for upload...");
 
       // Add each picture to FormData
       pictures.forEach((picture, index) => {
-        console.log(`📷 Adding photo ${index + 1}:`, {
-          uri: picture.uri,
-          name: picture.name || `batch-proof-${index}.jpg`,
-          type: picture.type || "image/jpeg",
-        });
+        console.log(
+          `📷 [BATCH FLOW] Processing photo ${index + 1}/${pictures.length}:`,
+          {
+            uri: picture.uri.substring(0, 50) + "...", // Truncate URI for logging
+            name: picture.name || `batch-proof-${index}.jpg`,
+            type: picture.type || "image/jpeg",
+          }
+        );
         formData.append("photos", {
           uri: picture.uri,
           name: picture.name || `batch-proof-${index}.jpg`,
@@ -698,8 +704,14 @@ class OrderService {
       });
 
       const url = `${BACKEND_URL}/api/v1/shipping-logs/batches/${batchCode}/upload-completion-photos`;
-      console.log("📤 Uploading to:", url);
+      console.log(`🌐 [BATCH FLOW] Upload URL: ${url}`);
+      console.log(
+        `🔐 [BATCH FLOW] Using auth token: ${
+          this.accessToken ? "Present" : "Missing"
+        }`
+      );
 
+      console.log("📤 [BATCH FLOW] Sending upload request...");
       const response = await axios.post<APIResponse<{ photoUrls: string[] }>>(
         url,
         formData,
@@ -711,17 +723,38 @@ class OrderService {
         }
       );
 
-      console.log("📸 Batch photos uploaded:", response.data);
+      console.log("✅ [BATCH FLOW] Upload request successful");
+      console.log(`📊 [BATCH FLOW] Response status: ${response.status}`);
+      console.log(`📝 [BATCH FLOW] Response message: ${response.data.message}`);
+
       const photoUrls = response.data.data.photoUrls;
-      console.log("📸 Photo URLs:", photoUrls);
+      console.log(`🖼️ [BATCH FLOW] Uploaded ${photoUrls.length} photo URLs:`);
+      photoUrls.forEach((url, index) => {
+        console.log(`   ${index + 1}. ${url}`);
+      });
+
+      console.log("🎉 [BATCH FLOW] Batch photo upload completed successfully");
       return { urls: photoUrls };
     } catch (error: any) {
-      console.error("Error uploading batch photos:", error);
+      console.error("❌ [BATCH FLOW] Batch photo upload failed");
+      console.error(`🔍 [BATCH FLOW] Error details:`, {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        method: error.config?.method,
+      });
+
       if (error.response) {
-        console.error("❌ Response status:", error.response.status);
-        console.error("❌ Response data:", error.response.data);
-        console.error("❌ Response headers:", error.response.headers);
+        console.error("📋 [BATCH FLOW] Server response:", {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers,
+        });
       }
+
+      console.error("💥 [BATCH FLOW] Upload process terminated with error");
       throw error;
     }
   }
@@ -739,25 +772,84 @@ class OrderService {
       totalCodAmount?: number;
     }
   ): Promise<any> {
+    console.log("🚀 [BATCH FLOW] Starting batch completion process");
+    console.log(`📦 [BATCH FLOW] Batch Code: ${batchCode}`);
+    console.log(`📊 [BATCH FLOW] Completion data:`, {
+      photosCount: data.completionPhotos?.length || 0,
+      hasNote: !!data.completionNote,
+      codCollected: data.codCollected,
+      totalCodAmount: data.totalCodAmount,
+    });
+
+    if (data.completionPhotos && data.completionPhotos.length > 0) {
+      console.log(`🖼️ [BATCH FLOW] Completion photos:`);
+      data.completionPhotos.forEach((url, index) => {
+        console.log(`   ${index + 1}. ${url}`);
+      });
+    }
+
+    if (data.completionNote) {
+      console.log(`📝 [BATCH FLOW] Completion note: "${data.completionNote}"`);
+    }
+
     try {
-      const response = await axios.post<APIResponse<any>>(
-        `${BACKEND_URL}/api/v1/shipping-logs/batches/${batchCode}/complete`,
-        data,
-        {
-          headers: this.getHeaders(),
-        }
+      const url = `${BACKEND_URL}/api/v1/shipping-logs/batches/${batchCode}/complete`;
+      console.log(`🌐 [BATCH FLOW] Completion URL: ${url}`);
+      console.log(
+        `🔐 [BATCH FLOW] Using auth token: ${
+          this.accessToken ? "Present" : "Missing"
+        }`
       );
 
-      console.log("✅ Batch completed:", response.data);
+      const requestBody = {
+        completionPhotos: data.completionPhotos || [],
+        completionNote: data.completionNote,
+        codCollected: data.codCollected,
+        totalCodAmount: data.totalCodAmount,
+      };
+
+      console.log(
+        `📤 [BATCH FLOW] Request body:`,
+        JSON.stringify(requestBody, null, 2)
+      );
+      console.log("📤 [BATCH FLOW] Sending completion request...");
+
+      const response = await axios.post<APIResponse<any>>(url, requestBody, {
+        headers: this.getHeaders(),
+      });
+
+      console.log("✅ [BATCH FLOW] Completion request successful");
+      console.log(`📊 [BATCH FLOW] Response status: ${response.status}`);
+      console.log(`📝 [BATCH FLOW] Response message: ${response.data.message}`);
+      console.log(`📋 [BATCH FLOW] Response data:`, response.data.data);
+
+      console.log(
+        "🎉 [BATCH FLOW] Batch completion process finished successfully"
+      );
+      console.log("🏁 [BATCH FLOW] ===== BATCH DELIVERY COMPLETED =====");
+
       return response.data.data;
     } catch (error: any) {
-      console.error("Error completing batch:", error);
+      console.error("❌ [BATCH FLOW] Batch completion failed");
+      console.error(`🔍 [BATCH FLOW] Error details:`, {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        method: error.config?.method,
+      });
+
       if (error.response) {
-        console.error("Response data:", error.response.data);
-        throw new Error(
-          error.response.data?.message || "Không thể hoàn thành batch"
-        );
+        console.error("📋 [BATCH FLOW] Server response:", {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers,
+        });
       }
+
+      console.error("💥 [BATCH FLOW] Completion process terminated with error");
+      console.error("🏁 [BATCH FLOW] ===== BATCH DELIVERY FAILED =====");
       throw error;
     }
   }

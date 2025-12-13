@@ -59,32 +59,28 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setLoggingOut(true);
+            await AuthService.logout();
+            router.replace("/login");
+          } catch (error: any) {
+            console.error("Logout error:", error);
+            Alert.alert("Error", error.message || "Logout failed");
+          } finally {
+            setLoggingOut(false);
+          }
         },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setLoggingOut(true);
-              await AuthService.logout();
-              router.replace("/login");
-            } catch (error: any) {
-              console.error("Logout error:", error);
-              Alert.alert("Error", error.message || "Logout failed");
-            } finally {
-              setLoggingOut(false);
-            }
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   if (loading) {
@@ -104,10 +100,7 @@ export default function ProfileScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={64} color="#EF5350" />
           <Text style={styles.errorText}>User information not found</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={loadUserInfo}
-          >
+          <TouchableOpacity style={styles.retryButton} onPress={loadUserInfo}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -136,10 +129,7 @@ export default function ProfileScreen() {
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
           {userInfo.photoUrl ? (
-            <Image
-              source={{ uri: userInfo.photoUrl }}
-              style={styles.avatar}
-            />
+            <Image source={{ uri: userInfo.photoUrl }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
               <Ionicons name="person" size={64} color="#999" />
@@ -268,6 +258,15 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+
+        {/* Test Upload Button (Development Only) */}
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => router.push("/test-upload-batch-photos")}
+        >
+          <Ionicons name="bug" size={20} color="#fff" />
+          <Text style={styles.testButtonText}>Test Upload Batch Photos</Text>
+        </TouchableOpacity>
 
         {/* Logout Button */}
         <TouchableOpacity
@@ -510,6 +509,27 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+  },
+  testButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#FF9800",
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    shadowColor: "#FF9800",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  testButtonText: {
+    fontSize: 14,
     fontWeight: "600",
     color: "#fff",
   },
