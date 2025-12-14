@@ -172,7 +172,7 @@ export default function TestUploadBatchPhotosScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>Test Upload Batch Photos</Text>
+        {/* <Text style={styles.title}>Test Upload Batch Photos</Text> */}
         <View style={{ width: 24 }} />
       </View>
 

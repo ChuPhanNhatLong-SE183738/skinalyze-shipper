@@ -514,7 +514,7 @@ export default function OrderDetailScreen() {
 
   // Normal layout for other statuses
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
@@ -524,7 +524,10 @@ export default function OrderDetailScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+      >
         {/* Map */}
         <View style={styles.mapContainer}>
           <DeliveryMap
@@ -798,6 +801,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollViewContent: {
+    paddingBottom: 100,
+  },
   mapContainer: {
     height: 250,
     backgroundColor: "#e0e0e0",
@@ -972,6 +978,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    zIndex: 100,
   },
   buttonRow: {
     flexDirection: "row",
@@ -979,9 +991,12 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
     flex: 1,
+    minHeight: 50,
   },
   batchButton: {
     backgroundColor: "#FFF3E0",
@@ -1024,6 +1039,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
   },
   // Fullscreen delivery mode styles
   containerFullscreen: {

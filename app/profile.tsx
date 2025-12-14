@@ -143,7 +143,6 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </View>
-
         {/* Info Cards */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Information</Text>
@@ -207,7 +206,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-
         {/* Addresses Section */}
         {userInfo.addresses && userInfo.addresses.length > 0 && (
           <View style={styles.section}>
@@ -239,7 +237,6 @@ export default function ProfileScreen() {
             ))}
           </View>
         )}
-
         {/* Account Details */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Details</Text>
@@ -258,16 +255,14 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-
-        {/* Test Upload Button (Development Only) */}
+        {/* Test Upload Button (Development Only)
         <TouchableOpacity
           style={styles.testButton}
           onPress={() => router.push("/test-upload-batch-photos")}
         >
           <Ionicons name="bug" size={20} color="#fff" />
           <Text style={styles.testButtonText}>Test Upload Batch Photos</Text>
-        </TouchableOpacity>
-
+        </TouchableOpacity> */}
         {/* Logout Button */}
         <TouchableOpacity
           style={styles.logoutButton}

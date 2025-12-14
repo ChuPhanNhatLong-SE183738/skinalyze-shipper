@@ -61,24 +61,19 @@ export default function DeliveryMap({
 
   const loadDirections = async () => {
     try {
-      // Use current location if available, otherwise use pickup location
-      const currentLat = currentLocation?.coords.latitude || pickupLocation.latitude;
-      const currentLng = currentLocation?.coords.longitude || pickupLocation.longitude;
-      
+      // Use current location if available, otherwise use delivery location
+      const currentLat = currentLocation?.coords.latitude || deliveryLocation.latitude;
+      const currentLng = currentLocation?.coords.longitude || deliveryLocation.longitude;
+
       const origin = {
         lat: currentLat,
         lng: currentLng,
       };
-      
-      // Determine destination based on order status
-      // If picking (PICKED_UP), go to pickup location first
-      // If delivering (OUT_FOR_DELIVERY), go to delivery location
-      const isPickingUp = orderStatus === 'picking' || orderStatus === 'accepted';
-      const targetLocation = isPickingUp ? pickupLocation : deliveryLocation;
-      
+
+      // Always go to delivery location
       const destination = {
-        lat: targetLocation.latitude,
-        lng: targetLocation.longitude,
+        lat: deliveryLocation.latitude,
+        lng: deliveryLocation.longitude,
       };
 
       const directions = await GoongService.getDirections(origin, destination, 'bike');
@@ -175,13 +170,12 @@ export default function DeliveryMap({
 
   // Generate HTML with Goong Maps
   const generateMapHTML = () => {
-    const currentLat = currentLocation?.coords.latitude || pickupLocation.latitude;
-    const currentLng = currentLocation?.coords.longitude || pickupLocation.longitude;
-    
-    // Determine target destination based on order status
-    const isPickingUp = orderStatus === 'picking' || orderStatus === 'accepted';
-    const targetLat = isPickingUp ? pickupLocation.latitude : deliveryLocation.latitude;
-    const targetLng = isPickingUp ? pickupLocation.longitude : deliveryLocation.longitude;
+    const currentLat = currentLocation?.coords.latitude || deliveryLocation.latitude;
+    const currentLng = currentLocation?.coords.longitude || deliveryLocation.longitude;
+
+    // Always target delivery location (removed pickup routing)
+    const targetLat = deliveryLocation.latitude;
+    const targetLng = deliveryLocation.longitude;
     
     return `
 <!DOCTYPE html>
@@ -248,15 +242,7 @@ export default function DeliveryMap({
     var currentMarker = null;
     var routeLayer = null;
 
-    // Add pickup marker
-    var pickupEl = document.createElement('div');
-    pickupEl.className = 'marker-pickup';
-    new goongjs.Marker(pickupEl)
-      .setLngLat([${pickupLocation.longitude}, ${pickupLocation.latitude}])
-      .setPopup(new goongjs.Popup().setHTML('<h3>Điểm lấy hàng</h3><p>${pickupLocation.address}</p>'))
-      .addTo(map);
-
-    // Add delivery marker
+    // Only add delivery marker (removed pickup marker)
     var deliveryEl = document.createElement('div');
     deliveryEl.className = 'marker-delivery';
     new goongjs.Marker(deliveryEl)
@@ -303,7 +289,7 @@ export default function DeliveryMap({
                 'line-cap': 'round'
               },
               paint: {
-                'line-color': '${isPickingUp ? '#66BB6A' : '#42A5F5'}',
+                'line-color': '#42A5F5',
                 'line-width': 4
               }
             });
@@ -367,10 +353,11 @@ export default function DeliveryMap({
     };
 
     window.centerMapOnRoute = function() {
-      var bounds = new goongjs.LngLatBounds();
-      bounds.extend([${pickupLocation.longitude}, ${pickupLocation.latitude}]);
-      bounds.extend([${deliveryLocation.longitude}, ${deliveryLocation.latitude}]);
-      map.fitBounds(bounds, { padding: 50 });
+      // Center on delivery location only
+      map.flyTo({
+        center: [${deliveryLocation.longitude}, ${deliveryLocation.latitude}],
+        zoom: 15
+      });
     };
   </script>
 </body>
