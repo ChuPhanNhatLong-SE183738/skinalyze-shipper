@@ -593,6 +593,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     flex: 1,
+    flexWrap: "wrap",
   },
   idBadge: {
     backgroundColor: "#F8F9FA",
@@ -613,10 +614,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
+    flexShrink: 0,
   },
   statusLabel: {
     fontSize: 12,
     fontWeight: "600",
+    flexShrink: 0,
+    minWidth: 60,
   },
   timeAgo: {
     fontSize: 12,
